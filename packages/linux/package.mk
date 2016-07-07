@@ -173,6 +173,9 @@ makeinstall_target() {
     for dtb in arch/$TARGET_KERNEL_ARCH/boot/dts/*.dtb; do
       cp $dtb $INSTALL/usr/share/bootloader 2>/dev/null || :
     done
+    for dtb in arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic/*.dtb; do
+      cp $dtb $INSTALL/usr/share/bootloader 2>/dev/null || :
+    done
   elif [ "$BOOTLOADER" = "bcm2835-bootloader" ]; then
     mkdir -p $INSTALL/usr/share/bootloader/overlays
     cp -p arch/$TARGET_KERNEL_ARCH/boot/dts/*.dtb $INSTALL/usr/share/bootloader
