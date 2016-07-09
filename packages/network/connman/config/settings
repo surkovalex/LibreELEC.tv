@@ -1,5 +1,6 @@
 [global]
 OfflineMode=false
+Timeservers=pool.ntp.org;;;
 
 [Wired]
 Enable=true
