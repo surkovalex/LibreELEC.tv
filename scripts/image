@@ -532,6 +532,10 @@ fi
               fi
             done
 
+            if [ -f $INSTALL/usr/share/bootloader/dtb.img ]; then
+               cp -p $INSTALL/usr/share/bootloader/dtb.img $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System
+            fi
+
             for overlay in $INSTALL/usr/share/bootloader/overlays/* ; do
               if [ -f $overlay ]; then
                 mkdir -p $RELEASE_DIR/${DISTRONAME}_${PROJECT}/System/overlays
