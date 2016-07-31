@@ -276,6 +276,14 @@ fi
 
     RELEASE_DIR="target/$IMAGE_NAME"
 
+    if [ -n "$DEVICE" -a -d "$PROJECT_DIR/$PROJECT/devices/$DEVICE/install" ]; then
+      INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/devices/$DEVICE/install"
+    else
+      INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/install"
+    fi
+
+    MKIMAGE_TOOL_CMD="$(which mkimage) -A arm -O linux -T script -C none -d"
+
     # cleanup
       rm -rf $RELEASE_DIR
 
@@ -379,8 +387,10 @@ fi
           TOOLCHAIN="$TOOLCHAIN" \
           TARGET_IMG="$TARGET_IMG" \
           IMAGE_NAME="$IMAGE_NAME" \
+          INSTALL_SRC_DIR="$INSTALL_SRC_DIR" \
           BOOTLOADER="$BOOTLOADER" \
           KERNEL_NAME="$KERNEL_NAME" \
+          MKIMAGE_TOOL_CMD="$MKIMAGE_TOOL_CMD" \
           RELEASE_DIR="$RELEASE_DIR" \
           UUID_SYSTEM="$(uuidgen)" \
           UUID_STORAGE="$(uuidgen)" \
@@ -397,12 +407,6 @@ fi
     # create WeTek Play (Amlogic) ZIP update and auto-install packages if requested
       if [ "$1" = "amlpkg" ]; then
         echo "Creating Amlogic ZIP update package"
-
-        if [ -n "$DEVICE" -a -d "$PROJECT_DIR/$PROJECT/devices/$DEVICE/install" ]; then
-          INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/devices/$DEVICE/install"
-        else
-          INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/install"
-        fi
 
         AML_PKG_DIR="$RELEASE_DIR/ampl-pkg"
 
@@ -427,6 +431,7 @@ fi
 
         if [ -f "$INSTALL/usr/share/bootloader/dtb.img" ]; then
           cp -PR "$INSTALL/usr/share/bootloader/dtb.img" $AML_PKG_DIR/dtb.img
+          cp "$INSTALL/usr/share/bootloader/dtb.img" $TARGET_IMG/$IMAGE_NAME.dtb
         fi
 
         # copy other files if any
@@ -445,20 +450,25 @@ fi
         java -Xmx1024m -jar $SIGNAPK_DIR/signapk.jar -w $SIGNAPK_DIR/testkey.x509.pem $SIGNAPK_DIR/testkey.pk8 update.zip sign/$IMAGE_NAME-update.zip
 
         # create the auto-install package
+        echo "Creating Amlogic ZIP auto-install package"
+        pushd sign > /dev/null
+        echo --update_package=/sdcard/$AML_UPDATE_NAME-update.zip > factory_update_param.aml
+        echo --wipe_data >> factory_update_param.aml
+        echo --wipe_cache >> factory_update_param.aml
         if [ -f "$INSTALL_SRC_DIR/files/recovery.img" ]; then
-          echo "Creating Amlogic ZIP auto-install package"
-          pushd sign > /dev/null
-          echo --update_package=/sdcard/$IMAGE_NAME-update.zip > factory_update_param.aml
           cp $INSTALL_SRC_DIR/files/recovery.img .
-          if [ -f $INSTALL_SRC_DIR/files/aml_autoscript ]; then
-            cp $INSTALL_SRC_DIR/files/aml_autoscript .
-          fi
-          zip -q $TARGET_IMG/$IMAGE_NAME.zip *
-          popd > /dev/null
         fi
+        if [ -f $INSTALL_SRC_DIR/files/aml_autoscript ]; then
+          cp $INSTALL_SRC_DIR/files/aml_autoscript .
+        elif [ -f "$INSTALL_SRC_DIR/aml_autoscript.src" ]; then
+          $MKIMAGE_TOOL_CMD "$INSTALL_SRC_DIR/aml_autoscript.src" aml_autoscript > /dev/null
+        fi
+        zip -q $TARGET_IMG/$IMAGE_NAME.zip *
+        popd > /dev/null
 
         # copy update package to target directory
         cp sign/$IMAGE_NAME-update.zip $TARGET_IMG
+
         popd > /dev/null
 
       elif [ "$1" = "noobs" ]; then
