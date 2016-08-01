@@ -781,6 +781,16 @@
       update_file "Kernel" "$UPDATE_KERNEL" "/flash/$IMAGE_KERNEL"
     fi
     update_file "System" "$UPDATE_SYSTEM" "/flash/$IMAGE_SYSTEM"
+    if [ -f "$UPDATE_DIR/dtb.img" ]; then
+      echo "dtb.img file exist"
+      if [ -b $IMAGE_KERNEL ]; then
+        echo "flash dtb.img to /dev/dtb"
+        update_partition "dtb" dtb.img /dev/dtb
+      else
+        echo "copy dtb.img to /flash"
+        update_file "dtb" dtb.img /flash/dtb.img
+      fi
+    fi
     update_bootloader
     do_cleanup
     do_reboot

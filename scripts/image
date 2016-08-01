@@ -349,10 +349,14 @@ fi
       mkdir -p $RELEASE_DIR/target
         cp $TARGET_IMG/$IMAGE_NAME.system $RELEASE_DIR/target/SYSTEM
         cp $TARGET_IMG/$IMAGE_NAME.kernel $RELEASE_DIR/target/KERNEL
+        if [ -f "$INSTALL/usr/share/bootloader/dtb.img" ]; then
+          cp "$INSTALL/usr/share/bootloader/dtb.img" $RELEASE_DIR/target/dtb.img
+        fi
     # create md5sum's
       ( cd $RELEASE_DIR;
         md5sum -t target/SYSTEM > target/SYSTEM.md5;
         md5sum -t target/KERNEL > target/KERNEL.md5;
+        md5sum -t target/dtb.img > target/dtb.md5;
       )
 
     # create target directory
@@ -431,7 +435,6 @@ fi
 
         if [ -f "$INSTALL/usr/share/bootloader/dtb.img" ]; then
           cp -PR "$INSTALL/usr/share/bootloader/dtb.img" $AML_PKG_DIR/dtb.img
-          cp "$INSTALL/usr/share/bootloader/dtb.img" $TARGET_IMG/$IMAGE_NAME.dtb
         fi
 
         # copy other files if any
