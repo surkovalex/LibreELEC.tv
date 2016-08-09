@@ -1,0 +1,26 @@
+<keymap>
+  <global>
+    <keyboard>
+	  <f13>Mute</f13>
+	  <f14>VolumeDown</f14>
+      <pause>Pause</pause>
+      <record>ActivateWindow(TVRecordings)</record>
+      <g>ActivateWindow(TVChannels)</g>
+      <f1>ActivateWindow(MyPVR)</f1>
+      <f2>ActivateWindow(MyVideos)</f2>
+      <f3>ActivateWindow(MyMusic)</f3>
+      <f4>ActivateWindow(MyPictures)</f4>
+      <f5>ActivateWindow(Favourites)</f5>
+    </keyboard>
+  </global>
+  <FullscreenLiveTV>
+    <keyboard>
+      <e>ActivateWindow(PVROSDGuide)</e>
+      <h>ActivateWindow(PVROSDChannels)</h>
+      <g>Playlist</g>
+      <closesquarebracket>AudioNextLanguage</closesquarebracket>
+      <f7>AspectRatio</f7>
+      <f15>CodecInfo</f15>
+    </keyboard>
+  </FullscreenLiveTV>
+</keymap>

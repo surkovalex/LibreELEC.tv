@@ -1,0 +1,42 @@
+diff --git a/src/resources/lib/modules/system.py b/src/resources/lib/modules/system.py
+index 440785b..60a93e8 100644
+--- a/src/resources/lib/modules/system.py
++++ b/src/resources/lib/modules/system.py
+@@ -26,6 +26,8 @@
+ # -*- coding: utf-8 -*-
+ 
+ import os
++import zipfile
++import shutil
+ import re
+ import glob
+ import time
+@@ -546,7 +548,7 @@ class system:
+                         silent = False
+                         xbmcDialog = xbmcgui.Dialog()
+                         answer = xbmcDialog.yesno('LibreELEC Update', self.oe._(32188).encode('utf-8') + ':  ' + self.oe.VERSION,
+-                                                  self.oe._(32187).encode('utf-8') + ':  ' + update_json['data']['update'].split('-'
++                                                  self.oe._(32187).encode('utf-8') + ':  ' + update_json['data']['update'].replace('-update.zip', '').split('-'
+                                                   )[-1].replace('.tar', '').encode('utf-8'), self.oe._(32180).encode('utf-8'))
+                         xbmcDialog = None
+                         del xbmcDialog
+@@ -571,6 +573,19 @@ class system:
+                     self.update_file = self.update_file.split('/')[-1]
+                     if self.struct['update']['settings']['UpdateNotify']['value'] == '1':
+                         self.oe.notify(self.oe._(32363), self.oe._(32366))
++                    if zipfile.is_zipfile(self.oe.TEMP + self.update_file):
++                        if not os.path.exists('/tmp/cache'):
++                            os.makedirs('/tmp/cache/')
++                        os.system('/bin/mount -t ext4 -o rw /dev/cache /tmp/cache')
++                        shutil.move(self.oe.TEMP + self.update_file, '/tmp/cache/update.zip')
++                        os.system('mkdir -p /tmp/cache/recovery')
++                        os.system('echo -e "--update_package=/cache/update.zip\n--wipe_cache" > /tmp/cache/recovery/command')
++                        subprocess.call('sync', shell=True, stdin=None, stdout=None, stderr=None)
++                        os.system('/bin/umount /tmp/cache')
++                        time.sleep(1)
++                        os.system('/usr/sbin/reboot recovery')
++                    else:
++                        delattr(self, 'update_in_progress')
+                     os.rename(self.oe.TEMP + self.update_file, self.LOCAL_UPDATE_DIR + self.update_file)
+                     subprocess.call('sync', shell=True, stdin=None, stdout=None, stderr=None)
+                     if silent == False:

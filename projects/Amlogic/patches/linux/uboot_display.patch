@@ -1,0 +1,52 @@
+diff --git a/drivers/amlogic/display/vout/tv_vout.c b/drivers/amlogic/display/vout/tv_vout.c
+index e74bf59..ae05ca5 100644
+--- a/drivers/amlogic/display/vout/tv_vout.c
++++ b/drivers/amlogic/display/vout/tv_vout.c
+@@ -116,23 +116,6 @@ static void set_tvmode_misc(enum tvmode_e mode)
+ 		set_vmode_clk(mode);
+ }
+ 
+-/*
+- * uboot_display_already() uses to judge whether display has already
+- * be set in uboot.
+- * Here, first read the value of reg P_ENCP_VIDEO_MAX_PXCNT and
+- * P_ENCP_VIDEO_MAX_LNCNT, then compare with value of tvregsTab[mode]
+- */
+-static int uboot_display_already(enum tvmode_e mode)
+-{
+-	enum tvmode_e source = TVMODE_MAX;
+-
+-	source = vmode_to_tvmode(get_logo_vmode());
+-	if (source == mode)
+-		return 1;
+-	else
+-		return 0;
+-}
+-
+ static unsigned int vdac_cfg_valid = 0, vdac_cfg_value;
+ static unsigned int cvbs_get_trimming_version(unsigned int flag)
+ {
+@@ -473,7 +456,6 @@ static char *tv_out_bist_str[] = {
+ int tv_out_setmode(enum tvmode_e mode)
+ {
+ 	const struct tvinfo_s *tvinfo;
+-	static int uboot_display_flag = 1;
+ 	int ret;
+ 
+ 	if (mode >= TVMODE_MAX) {
+@@ -489,15 +471,6 @@ int tv_out_setmode(enum tvmode_e mode)
+ 	}
+ 	vout_log_info("TV mode %s selected.\n", tvinfo->id);
+ 
+-	if (uboot_display_flag) {
+-		uboot_display_flag = 0;
+-		if (uboot_display_already(mode)) {
+-			vout_log_info("already display in uboot\n");
+-			mutex_unlock(&setmode_mutex);
+-			return 0;
+-		}
+-	}
+-
+ 	tv_out_pre_close_vdac(mode);
+ 
+ 	tv_out_set_clk_gate(mode);

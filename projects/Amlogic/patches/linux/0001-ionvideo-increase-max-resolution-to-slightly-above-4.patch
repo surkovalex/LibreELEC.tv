@@ -1,0 +1,32 @@
+From 78ff3e6c93926c80fc568039cb822588ad187785 Mon Sep 17 00:00:00 2001
+From: "Mauro (mdrjr) Ribeiro" <mauro.ribeiro@hardkernel.com>
+Date: Mon, 27 Jun 2016 14:22:07 -0300
+Subject: [PATCH 1/2] ionvideo: increase max resolution to slightly above 4k
+
+Thanks to LongChair for finding
+
+http://forum.odroid.com/viewtopic.php?f=136&t=22141#p148417
+
+Change-Id: Ieef6db9a942258b864ad52e050e28ad7f4f0804e
+---
+ drivers/amlogic/ionvideo/ionvideo.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/amlogic/ionvideo/ionvideo.h b/drivers/amlogic/ionvideo/ionvideo.h
+index b23518f..22af0b9 100644
+--- a/drivers/amlogic/ionvideo/ionvideo.h
++++ b/drivers/amlogic/ionvideo/ionvideo.h
+@@ -55,8 +55,8 @@
+ #define WAKE_NUMERATOR 30
+ #define WAKE_DENOMINATOR 1001
+ 
+-#define MAX_WIDTH 1920
+-#define MAX_HEIGHT 1920
++#define MAX_WIDTH 4096
++#define MAX_HEIGHT 4096
+ 
+ #define DUR2PTS(x) ((x) - ((x) >> 4))
+ 
+-- 
+1.7.10.4
+
