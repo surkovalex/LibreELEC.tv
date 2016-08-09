@@ -35,8 +35,10 @@ case "$LINUX" in
     PKG_URL="$DISTRO_SRC/$PKG_NAME-$PKG_VERSION.tar.xz"
     ;;
   amlogic-3.14)
-    PKG_VERSION="amlogic-3.14-f7fde29"
-    PKG_URL="http://amlinux.ru/source/$PKG_NAME-$PKG_VERSION.tar.gz"
+    PKG_VERSION="1bf2a10"
+    PKG_GIT_URL="https://github.com/kszaq/linux.git"
+    PKG_GIT_BRANCH="amlogic-3.14.y"
+    PKG_KEEP_CHECKOUT="no"
     ;;
   imx6)
     PKG_VERSION="3.14-mx6-sr"
@@ -162,12 +164,14 @@ make_target() {
 
   LDFLAGS="" make $KERNEL_TARGET $KERNEL_MAKE_EXTRACMD
 
+
   DTB_BLOBS=($(ls arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic/*.dtb))
   DTB_BLOBS_COUNT="${#DTB_BLOBS[@]}"
   if [ "$DTB_BLOBS_COUNT" -gt 1 ]; then
     $ROOT/tools/dtbTool/dtbTool -o arch/$TARGET_KERNEL_ARCH/boot/dtb.img -p scripts/dtc/ arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic/
     ANDROID_BOOTIMG_SECOND="arch/$TARGET_KERNEL_ARCH/boot/dtb.img"
   else
+    ANDROID_BOOTIMG_SECOND="arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic/$KERNEL_UBOOT_EXTRA_TARGET"
     cp -f $ANDROID_BOOTIMG_SECOND arch/$TARGET_KERNEL_ARCH/boot/dtb.img
   fi
 
