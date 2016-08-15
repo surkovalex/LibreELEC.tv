@@ -1,0 +1,15 @@
+diff --git a/src/defaults.py b/src/defaults.py
+index 79588a7..211e5e4 100644
+--- a/src/defaults.py
++++ b/src/defaults.py
+@@ -82,8 +82,8 @@ system = {
+     'ENABLED': True,
+     'KERNEL_CMD': '/proc/cmdline',
+     'SET_CLOCK_CMD': '/sbin/hwclock --systohc --utc',
+-    'UPDATE_REQUEST_URL': 'http://update.libreelec.tv/updates.php',
+-    'UPDATE_DOWNLOAD_URL': 'http://%s.libreelec.tv/%s',
++    'UPDATE_REQUEST_URL': 'http://foo.bar/update.php',
++    'UPDATE_DOWNLOAD_URL': 'http://foo.bar/%s/%s',
+     'LOCAL_UPDATE_DIR': '/storage/.update/',
+     'GET_CPU_FLAG': "cat /proc/cpuinfo | grep -q 'flags.* lm ' && echo '1' || echo '0'",
+     'XBMC_RESET_FILE': '%s/reset_xbmc' % CONFIG_CACHE,

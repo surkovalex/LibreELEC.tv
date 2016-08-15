@@ -1,0 +1,125 @@
+diff --git a/drivers/media/dvb-core/dvb_frontend.c b/drivers/media/dvb-core/dvb_frontend.c
+index 88604fb..cbf30c6 100644
+--- a/drivers/media/dvb-core/dvb_frontend.c
++++ b/drivers/media/dvb-core/dvb_frontend.c
+@@ -2482,18 +2482,12 @@ static int dvb_frontend_ioctl_properties(struct file *file,
+ 			err = -ENOMEM;
+ 			goto out;
+ 		}
+-#ifdef CONFIG_COMPAT
+-		if (copy_from_user(tvp, compat_ptr((unsigned long)tvps->props),
+-				tvps->num * sizeof(struct dtv_property))) {
+-			err = -EFAULT;
+-			goto out;
+-		}
+-#else
++
+ 		if (copy_from_user(tvp, tvps->props, tvps->num * sizeof(struct dtv_property))) {
+ 			err = -EFAULT;
+ 			goto out;
+ 		}
+-#endif
++
+ 		for (i = 0; i < tvps->num; i++) {
+ 			err = dtv_property_process_set(fe, tvp + i, file);
+ 			if (err < 0)
+@@ -2521,18 +2515,12 @@ static int dvb_frontend_ioctl_properties(struct file *file,
+ 			err = -ENOMEM;
+ 			goto out;
+ 		}
+-#ifdef CONFIG_COMPAT
+-		if (copy_from_user(tvp, compat_ptr((unsigned long)tvps->props),
+-				tvps->num * sizeof(struct dtv_property))) {
+-			err = -EFAULT;
+-			goto out;
+-		}
+-#else
++
+ 		if (copy_from_user(tvp, tvps->props, tvps->num * sizeof(struct dtv_property))) {
+ 			err = -EFAULT;
+ 			goto out;
+ 		}
+-#endif
++
+ 		/*
+ 		 * Fills the cache out struct with the cache contents, plus
+ 		 * the data retrieved from get_frontend, if the frontend
+@@ -2549,18 +2537,11 @@ static int dvb_frontend_ioctl_properties(struct file *file,
+ 				goto out;
+ 			(tvp + i)->result = err;
+ 		}
+-#ifdef CONFIG_COMPAT
+-		if (copy_to_user(compat_ptr((unsigned long)tvps->props), tvp,
+-				tvps->num * sizeof(struct dtv_property))) {
+-			err = -EFAULT;
+-			goto out;
+-		}
+-#else
++
+ 		if (copy_to_user(tvps->props, tvp, tvps->num * sizeof(struct dtv_property))) {
+ 			err = -EFAULT;
+ 			goto out;
+ 		}
+-#endif
+ 
+ 	} else
+ 		err = -EOPNOTSUPP;
+diff --git a/include/uapi/linux/dvb/frontend.h b/include/uapi/linux/dvb/frontend.h
+index 9f9e75b..2ebda30 100644
+--- a/include/uapi/linux/dvb/frontend.h
++++ b/include/uapi/linux/dvb/frontend.h
+@@ -584,7 +584,6 @@ struct dtv_property {
+ 			__u32 reserved1[3];
+ 			void *reserved2;
+ 		} buffer;
+-		__u32 reserved[14];
+ 	} u;
+ 	int result;
+ } __attribute__ ((packed));
+@@ -594,10 +593,7 @@ struct dtv_property {
+ 
+ struct dtv_properties {
+ 	__u32 num;
+-	union {
+-		struct dtv_property *props;
+-		__u64 reserved;
+-	};
++	struct dtv_property *props;
+ };
+ /* for atv */
+ struct tuner_status_s {
+@@ -605,10 +601,7 @@ struct tuner_status_s {
+ 	unsigned int rssi;
+ 	unsigned char mode;	/*dtv:0 or atv:1 */
+ 	unsigned char tuner_locked;	/*notlocked:0,locked:1 */
+-	union {
+-		void *ressrved;
+-		__u64 reserved1;
+-	};
++	void *ressrved;
+ };
+ 
+ struct atv_status_s {
+@@ -617,20 +610,14 @@ struct atv_status_s {
+ 	unsigned int audmode;
+ 	int snr;
+ 	int afc;
+-	union {
+-		void *resrvred;
+-		__u64 reserved1;
+-	};
++	void *resrvred;
+ };
+ 
+ struct sound_status_s {
+ 	/*A2DK/A2BG/NICAM BG/NICAM DK/BTSC/EIAJ */
+ 	unsigned short sound_sys;
+ 	unsigned short sound_mode;	/*SETERO/DUAL/MONO/SAP */
+-	union {
+-		void *resrvred;
+-		__u64 reserved1;
+-	};
++	void *resrvred;
+ };
+ enum tuner_param_cmd_e {
+ 	TUNER_CMD_AUDIO_MUTE = 0x0000,
