@@ -21,16 +21,10 @@ PKG_REV="1"
 PKG_ARCH="arm aarch64"
 PKG_LICENSE="other"
 PKG_SITE="http://openlinux.amlogic.com"
-case $ARCH in
-  arm)
-    PKG_VERSION="45a1086"
-    PKG_URL="https://github.com/codesnake/libamcodec/archive/$PKG_VERSION.tar.gz"
-    ;;
-  aarch64)
-    PKG_VERSION="210755d"
-    PKG_URL="http://amlinux.ru/source/$PKG_NAME-$PKG_VERSION.tar.gz"
-    ;;
-esac
+PKG_VERSION="2fba80c"
+PKG_GIT_URL="https://github.com/surkovalex/libamcodec.git"
+PKG_GIT_BRANCH="master"
+PKG_KEEP_CHECKOUT="no"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_PRIORITY="optional"
 PKG_SECTION="multimedia"
