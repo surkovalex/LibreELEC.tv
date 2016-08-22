@@ -16,28 +16,21 @@
 #  along with LibreELEC.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-PKG_NAME="squeezelite"
-PKG_VERSION="33cca7e"
-PKG_REV="0"
+PKG_NAME="netbsd-curses"
+PKG_VERSION="47b256a"
 PKG_ARCH="any"
-PKG_LICENSE="GPLv3"
-PKG_SITE="https://github.com/ralph-irving/squeezelite"
-PKG_URL="https://github.com/ralph-irving/squeezelite/archive/$PKG_VERSION.tar.gz"
-PKG_DEPENDS_TARGET="toolchain faad2 ffmpeg flac libmad libvorbis mpg123 soxr"
-PKG_SECTION="tools"
+PKG_SITE="https://github.com/sabotage-linux/netbsd-curses"
+PKG_URL="https://github.com/sabotage-linux/netbsd-curses/archive/$PKG_VERSION.tar.gz"
+PKG_DEPENDS_TARGET="toolchain"
 PKG_PRIORITY="optional"
-PKG_SHORTDESC="squeezelite"
-PKG_LONGDESC="A client for the Logitech Media Server"
+PKG_SECTION="devel"
+PKG_SHORTDESC="netbsd-libcurses portable edition"
+PKG_LONGDESC="netbsd-libcurses portable edition"
 
-PKG_IS_ADDON="no"
-PKG_AUTORECONF="no"
-
-pre_make_target() {
-  OPTS="-DDSD -DFFMPEG -DRESAMPLE -DVISEXPORT"
-  CFLAGS="$CFLAGS $OPTS"
-  LDFLAGS="$LDFLAGS -lasound -lpthread -lm -lrt"
+make_target() {
+  make HOSTCC="$HOST_CC" PREFIX=/usr all-static
 }
 
 makeinstall_target() {
-  :
+  make HOSTCC="$HOST_CC" PREFIX=$SYSROOT_PREFIX/usr install-static
 }

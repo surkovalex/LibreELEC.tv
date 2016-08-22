@@ -1,5 +1,6 @@
 ################################################################################
 #      This file is part of LibreELEC - https://libreelec.tv
+#      Copyright (C) 2009-2015 Stephan Raue (stephan@openelec.tv)
 #      Copyright (C) 2016 Team LibreELEC
 #
 #  LibreELEC is free software: you can redistribute it and/or modify
@@ -16,28 +17,31 @@
 #  along with LibreELEC.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-PKG_NAME="squeezelite"
-PKG_VERSION="33cca7e"
-PKG_REV="0"
+PKG_NAME="xdotool"
+PKG_VERSION="2.20110530.1"
+PKG_REV="1"
 PKG_ARCH="any"
-PKG_LICENSE="GPLv3"
-PKG_SITE="https://github.com/ralph-irving/squeezelite"
-PKG_URL="https://github.com/ralph-irving/squeezelite/archive/$PKG_VERSION.tar.gz"
-PKG_DEPENDS_TARGET="toolchain faad2 ffmpeg flac libmad libvorbis mpg123 soxr"
-PKG_SECTION="tools"
+PKG_LICENSE="GPL"
+PKG_SITE="http://www.semicomplete.com/projects/xdotool/"
+PKG_URL="http://semicomplete.googlecode.com/files/${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_DEPENDS_TARGET="toolchain libXinerama libXtst"
 PKG_PRIORITY="optional"
-PKG_SHORTDESC="squeezelite"
-PKG_LONGDESC="A client for the Logitech Media Server"
+PKG_SECTION="x11/app"
+PKG_SHORTDESC="This tool lets you simulate keyboard input and mouse activity, move and resize windows, etc."
+PKG_LONGDESC="This tool lets you simulate keyboard input and mouse activity, move and resize windows, etc."
 
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
 
-pre_make_target() {
-  OPTS="-DDSD -DFFMPEG -DRESAMPLE -DVISEXPORT"
-  CFLAGS="$CFLAGS $OPTS"
-  LDFLAGS="$LDFLAGS -lasound -lpthread -lm -lrt"
+pre_configure_target() {
+  LDFLAGS="$LDFLAGS -lXext"
+}
+
+make_target() {
+  make xdotool.static
+  mv xdotool.static xdotool
 }
 
 makeinstall_target() {
-  :
+  : # nothing to do here
 }
