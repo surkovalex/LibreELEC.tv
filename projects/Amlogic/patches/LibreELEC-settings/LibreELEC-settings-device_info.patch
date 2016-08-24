@@ -52,7 +52,7 @@ index 8f396ff..2c74214 100644
              self.setProperty('distri', self.oe.DISTRIBUTION)
              self.setProperty('version', self.oe.VERSION)
              self.setProperty('build', self.oe.BUILD)
-+            self.setProperty('device', self.oe.DEV)
++            self.setProperty('device', self.oe.DEVICE)
              self.setProperty('DIST_MEDIA', 'default')
              if os.path.exists(self.oe.__media__ + self.oe.DISTRIBUTION):
                  self.setProperty('DIST_MEDIA', self.oe.DISTRIBUTION)
@@ -60,7 +60,7 @@ index 8f396ff..2c74214 100644
              self.setProperty('distri', self.oe.DISTRIBUTION)
              self.setProperty('version', self.oe.VERSION)
              self.setProperty('build', self.oe.BUILD)
-+            self.setProperty('device', self.oe.DEV)
++            self.setProperty('device', self.oe.DEVICE)
              self.setProperty('DIST_MEDIA', 'default')
              if os.path.exists(self.oe.__media__ + self.oe.DISTRIBUTION):
                  self.setProperty('DIST_MEDIA', self.oe.DISTRIBUTION)

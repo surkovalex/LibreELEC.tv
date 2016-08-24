@@ -1,20 +1,18 @@
 diff --git a/src/defaults.py b/src/defaults.py
-index 79588a7..f082338 100644
+index 79588a7..0f25ae7 100644
 --- a/src/defaults.py
 +++ b/src/defaults.py
-@@ -82,8 +82,8 @@ system = {
-     'ENABLED': True,
-     'KERNEL_CMD': '/proc/cmdline',
+@@ -84,6 +84,8 @@ system = {
      'SET_CLOCK_CMD': '/sbin/hwclock --systohc --utc',
--    'UPDATE_REQUEST_URL': 'http://update.libreelec.tv/updates.php',
--    'UPDATE_DOWNLOAD_URL': 'http://%s.libreelec.tv/%s',
-+    'UPDATE_REQUEST_URL': 'http://amlinux.ru/updates/zip_update.php',
-+    'UPDATE_DOWNLOAD_URL': 'http://amlinux.ru/%s/%s',
+     'UPDATE_REQUEST_URL': 'http://update.libreelec.tv/updates.php',
+     'UPDATE_DOWNLOAD_URL': 'http://%s.libreelec.tv/%s',
++    'UPDATE_REQUEST_URL2': 'http://amlinux.ru/updates/zip_update.php',
++    'UPDATE_DOWNLOAD_URL2': 'http://amlinux.ru/%s/%s',
      'LOCAL_UPDATE_DIR': '/storage/.update/',
      'GET_CPU_FLAG': "cat /proc/cpuinfo | grep -q 'flags.* lm ' && echo '1' || echo '0'",
      'XBMC_RESET_FILE': '%s/reset_xbmc' % CONFIG_CACHE,
 diff --git a/src/oe.py b/src/oe.py
-index 2130f74..99e0441 100644
+index 2130f74..6b24638 100644
 --- a/src/oe.py
 +++ b/src/oe.py
 @@ -757,7 +757,7 @@ def parse_os_release():
@@ -45,28 +43,38 @@ index 2130f74..99e0441 100644
  VERSION = os_release_data[1]
  ARCHITECTURE = os_release_data[2]
  BUILD = os_release_data[3]
-+DEV = os_release_data[4]
++DEVICE = os_release_data[4]
  DOWNLOAD_DIR = '/storage/downloads'
  XBMC_USER_HOME = os.environ.get('XBMC_USER_HOME', '/storage/.kodi')
  CONFIG_CACHE = os.environ.get('CONFIG_CACHE', '/storage/.cache')
 diff --git a/src/resources/lib/modules/system.py b/src/resources/lib/modules/system.py
-index 440785b..4e01921 100644
+index 440785b..c653ca4 100644
 --- a/src/resources/lib/modules/system.py
 +++ b/src/resources/lib/modules/system.py
-@@ -38,7 +38,6 @@ import threading
- import subprocess
- from xml.dom import minidom
- 
--
- class system:
- 
-     ENABLED = False
-@@ -528,7 +527,7 @@ class system:
-                 self.oe.DISTRIBUTION,
-                 self.oe.ARCHITECTURE,
+@@ -45,6 +45,8 @@ class system:
+     KERNEL_CMD = None
+     UPDATE_REQUEST_URL = None
+     UPDATE_DOWNLOAD_URL = None
++    UPDATE_REQUEST_URL2 = None
++    UPDATE_DOWNLOAD_URL2 = None
+     LOCAL_UPDATE_DIR = None
+     XBMC_RESET_FILE = None
+     LIBREELEC_RESET_FILE = None
+@@ -530,8 +532,17 @@ class system:
                  self.oe.VERSION,
--                self.cpu_lm_flag,
-+                self.oe.DEV,
+                 self.cpu_lm_flag,
                  )
++            url2 = '%s?i=%s&d=%s&pa=%s&v=%s&l=%s' % (
++                self.UPDATE_REQUEST_URL2,
++                self.oe.SYSTEMID,
++                self.oe.DISTRIBUTION,
++                self.oe.ARCHITECTURE,
++                self.oe.VERSION,
++                self.oe.DEVICE,
++                )
              self.oe.dbg_log('system::check_updates_v2', 'URL: %s' % url, 0)
              update_json = self.oe.load_url(url)
++            update_json = self.oe.load_url(url2)
+             self.oe.dbg_log('system::check_updates_v2', 'RESULT: %s' % repr(update_json), 0)
+             if update_json != '':
+                 update_json = json.loads(update_json)
