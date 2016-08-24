@@ -56,7 +56,7 @@ index 76c9a33..b91d74f 100644
 +      <group id="4">
 +       <setting id="videoplayer.accelmpeg2" type="integer" label="39001" help="13558">
 +         <level>2</level>
-+         <default>0</default>
++         <default>800</default>
 +         <constraints>
 +           <options>
 +           <option label="20420">9999</option>   <!-- Never -->
