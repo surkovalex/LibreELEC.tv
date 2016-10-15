@@ -54,8 +54,17 @@ else
   LIBREELEC_BUILD="community"
 fi
 
+if [ -n "$CUSTOM_VERSION" ]; then
+  LIBREELEC_VERSION="$CUSTOM_VERSION"
+fi
+
+if [ -n "$CUSTOM_GIT_HASH" ]; then
+  GIT_HASH="$CUSTOM_GIT_HASH"
+fi
+
 TARGET_VERSION="$PROJECT.$TARGET_ARCH-$LIBREELEC_VERSION"
 IMAGE_NAME="$DISTRONAME-$TARGET_VERSION"
+
 if [ "$DEVEL_VERSION" = "devel" ] ; then
   IMAGE_NAME="$DISTRONAME-$PROJECT.$TARGET_ARCH-$OS_VERSION-$LIBREELEC_VERSION"
 fi
@@ -212,6 +221,17 @@ fi
       fi
     done
   fi
+
+# copy board related files to filesystem
+if [ -n "$DEVICE" -a -d "$PROJECT_DIR/$PROJECT/devices/$DEVICE/filesystem" ]; then
+  cp -PR $PROJECT_DIR/$PROJECT/devices/$DEVICE/filesystem/* $INSTALL
+  # install device specific systemd services
+  for service in $PROJECT_DIR/$PROJECT/devices/$DEVICE/filesystem/usr/lib/systemd/system/*.service ; do
+    if [ -f "$service" ] ; then
+      enable_service $(basename $service)
+    fi
+  done
+fi
 
 # run depmod
   MODVER=$(basename $(ls -d $INSTALL/lib/modules/*))
