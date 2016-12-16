@@ -408,6 +408,9 @@ if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "noobs" ]
     SIGNAPK_DIR="$ROOT/tools/signapk"
     java -Xmx1024m -jar $SIGNAPK_DIR/signapk.jar -w $SIGNAPK_DIR/testkey.x509.pem $SIGNAPK_DIR/testkey.pk8 update.zip sign/$IMAGE_NAME-update.zip
 
+    # copy update.zip to target folder
+    cp -f sign/$IMAGE_NAME-update.zip $TARGET_IMG
+
     # create the auto-install package
     echo "Creating Amlogic ZIP auto-install package"
     pushd sign > /dev/null
