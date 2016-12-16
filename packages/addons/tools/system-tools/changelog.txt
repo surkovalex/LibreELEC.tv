@@ -1,3 +1,6 @@
+7.0.102
+- Bump file package
+
 7.0.101
 -Add inotify-tools, mc
 
