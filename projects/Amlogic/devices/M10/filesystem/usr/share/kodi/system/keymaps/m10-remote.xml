@@ -1,0 +1,12 @@
+<keymap>
+    <global>
+	<keyboard>
+	    <key id="61575">backspace</key>
+	</keyboard>
+    </global>
+    <fullscreenvideo>
+	<keyboard>
+	    <key id="61507">codecinfo</key>
+	</keyboard>
+    </fullscreenvideo>
+</keymap>
