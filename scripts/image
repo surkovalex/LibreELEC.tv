@@ -459,7 +459,15 @@ fi
 
         # copy update package to target directory
         cp sign/$IMAGE_NAME-update.zip $TARGET_IMG
+
+        # cleanup .system .kernel files from target dir
+        rm -f $TARGET_IMG/$IMAGE_NAME.system
+        rm -f  $TARGET_IMG/$IMAGE_NAME.kernel
+
         popd > /dev/null
+
+        # cleanup release dir
+        rm -rf $RELEASE_DIR
 
       elif [ "$1" = "noobs" ]; then
 
