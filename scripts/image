@@ -412,7 +412,12 @@ fi
       if [ "$1" = "amlpkg" ]; then
         echo "Creating Amlogic ZIP update package"
 
-        INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/install"
+        if [ -n "$DEVICE" -a -d "$PROJECT_DIR/$PROJECT/devices/$DEVICE/install" ]; then
+          INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/devices/$DEVICE/install"
+        else
+          INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/install"
+        fi
+
         AML_PKG_DIR="$RELEASE_DIR/ampl-pkg"
 
         # create package directory
