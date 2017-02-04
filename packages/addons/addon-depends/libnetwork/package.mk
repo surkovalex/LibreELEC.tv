@@ -1,5 +1,5 @@
 ################################################################################
-#      This file is part of LibreELEC - http://www.libreelec.tv
+#      This file is part of LibreELEC - https://libreelec.tv
 #      Copyright (C) 2009-2016 Lukas Rusak (lrusak@libreelec.tv)
 #
 #  LibreELEC is free software: you can redistribute it and/or modify
@@ -16,18 +16,17 @@
 #  along with LibreELEC.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-PKG_NAME="runc"
-PKG_VERSION="2f7393a"
+PKG_NAME="libnetwork"
+PKG_VERSION="0f53435"
 PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="APL"
-PKG_SITE="https://github.com/opencontainers/runc"
-PKG_URL="https://github.com/opencontainers/runc/archive/${PKG_VERSION}.tar.gz"
+PKG_SITE="https://github.com/docker/libnetwork"
+PKG_URL="https://github.com/docker/libnetwork/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain go:host"
-PKG_PRIORITY="optional"
 PKG_SECTION="system"
-PKG_SHORTDESC="runc is a CLI tool for spawning and running containers according to the OCI specification"
-PKG_LONGDESC="runc is a CLI tool for spawning and running containers according to the OCI specification"
+PKG_SHORTDESC="Libnetwork provides a native Go implementation for connecting containers"
+PKG_LONGDESC="Libnetwork provides a native Go implementation for connecting containers"
 
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
@@ -49,24 +48,25 @@ pre_make_target() {
          ;;
       esac
       ;;
+    aarch64)
+      export GOARCH=arm64
+      ;;
   esac
 
   export GOOS=linux
-  export CGO_ENABLED=1
+  export CGO_ENABLED=0
   export CGO_NO_EMULATION=1
   export CGO_CFLAGS=$CFLAGS
-  export LDFLAGS="-w -extldflags -static -X main.gitCommit=${PKG_VERSION} -X main.version=$(cat ./VERSION) -extld $CC"
+  export LDFLAGS="-extld $CC"
   export GOLANG=$ROOT/$TOOLCHAIN/lib/golang/bin/go
-  export GOPATH=$ROOT/$PKG_BUILD.gopath:$ROOT/$PKG_BUILD/Godeps/_workspace/
+  export GOPATH=$ROOT/$PKG_BUILD.gopath
   export GOROOT=$ROOT/$TOOLCHAIN/lib/golang
   export PATH=$PATH:$GOROOT/bin
-
-  ln -fs $ROOT/$PKG_BUILD $ROOT/$PKG_BUILD/Godeps/_workspace/src/github.com/opencontainers/runc
 }
 
 make_target() {
   mkdir -p bin
-  $GOLANG build -v -o bin/runc -a -tags "cgo static_build" -ldflags "$LDFLAGS" ./
+  $GOLANG build -v -o bin/docker-proxy -a -ldflags "$LDFLAGS" ./cmd/proxy
 }
 
 makeinstall_target() {

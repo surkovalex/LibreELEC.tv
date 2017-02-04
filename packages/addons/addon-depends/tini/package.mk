@@ -1,6 +1,6 @@
 ################################################################################
 #      This file is part of LibreELEC - https://libreelec.tv
-#      Copyright (C) 2016 Team LibreELEC
+#      Copyright (C) 2009-2016 Lukas Rusak (lrusak@libreelec.tv)
 #
 #  LibreELEC is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,24 +16,30 @@
 #  along with LibreELEC.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-PKG_NAME="moonlight-common-c"
-PKG_VERSION="1d058cb"
+PKG_NAME="tini"
+PKG_VERSION="949e6fa"
 PKG_REV="1"
 PKG_ARCH="any"
-PKG_LICENSE="GPLv3"
-PKG_SITE="https://github.com/irtimmer/moonlight-common-c"
-PKG_URL="https://github.com/irtimmer/moonlight-common-c/archive/$PKG_VERSION.tar.gz"
+PKG_LICENSE="MIT"
+PKG_SITE="https://github.com/krallin/tini"
+PKG_URL="https://github.com/krallin/tini/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain"
-PKG_PRIORITY="optional"
-PKG_SECTION=""
-PKG_SHORTDESC="Shared C code for the implementation of Nvidia's GameStream protocol"
-PKG_LONGDESC="Shared C code for the implementation of Nvidia's GameStream protocol"
+PKG_SECTION="system"
+PKG_SHORTDESC="Tini is the simplest init you could think of"
+PKG_LONGDESC="Tini is the simplest init you could think of"
 
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
 
-make_target() {
-  :
+PKG_MAKE_TARGET_OPTS="tini-static"
+
+pre_configure_target(){
+  sed -i "s|@tini_VERSION_GIT@| - git.${PKG_VERSION}|" $ROOT/$PKG_BUILD/src/tiniConfig.h.in
+}
+
+configure_target() {
+  cmake -DMINIMAL=ON \
+        ..
 }
 
 makeinstall_target() {

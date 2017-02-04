@@ -16,26 +16,30 @@
 #  along with LibreELEC.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-PKG_NAME="moonlight-common-c"
-PKG_VERSION="1d058cb"
+PKG_NAME="icu"
+PKG_VERSION="57.1"
 PKG_REV="1"
 PKG_ARCH="any"
-PKG_LICENSE="GPLv3"
-PKG_SITE="https://github.com/irtimmer/moonlight-common-c"
-PKG_URL="https://github.com/irtimmer/moonlight-common-c/archive/$PKG_VERSION.tar.gz"
-PKG_DEPENDS_TARGET="toolchain"
-PKG_PRIORITY="optional"
-PKG_SECTION=""
-PKG_SHORTDESC="Shared C code for the implementation of Nvidia's GameStream protocol"
-PKG_LONGDESC="Shared C code for the implementation of Nvidia's GameStream protocol"
+PKG_LICENSE="Custom"
+PKG_SITE="http://www.icu-project.org"
+PKG_URL="http://download.icu-project.org/files/${PKG_NAME}4c/${PKG_VERSION}/${PKG_NAME}4c-${PKG_VERSION//./_}-src.tgz"
+PKG_SOURCE_DIR="icu"
+PKG_DEPENDS_TARGET="toolchain icu:host"
+PKG_SECTION="textproc"
+PKG_SHORTDESC="International Components for Unicode library"
+PKG_LONGDESC="International Components for Unicode library"
 
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
 
-make_target() {
-  :
-}
+PKG_CONFIGURE_OPTS_HOST="--enable-static --disable-shared"
 
-makeinstall_target() {
-  :
+PKG_CONFIGURE_OPTS_TARGET="--enable-static \
+                           --disable-shared \
+                           --with-cross-build=$ROOT/$PKG_BUILD/.$HOST_NAME"
+
+PKG_CONFIGURE_SCRIPT="source/configure"
+
+post_makeinstall_target() {
+  rm -rf $INSTALL
 }

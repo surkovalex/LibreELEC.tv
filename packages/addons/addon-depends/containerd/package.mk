@@ -17,13 +17,13 @@
 ################################################################################
 
 PKG_NAME="containerd"
-PKG_VERSION="0366d7e"
+PKG_VERSION="03e5862"
 PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="APL"
 PKG_SITE="https://containerd.tools/"
 PKG_URL="https://github.com/docker/containerd/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_HOST="toolchain go"
+PKG_DEPENDS_TARGET="toolchain go:host"
 PKG_PRIORITY="optional"
 PKG_SECTION="system"
 PKG_SHORTDESC="containerd is a daemon to control runC"
@@ -73,4 +73,3 @@ make_target() {
 makeinstall_target() {
   :
 }
-
