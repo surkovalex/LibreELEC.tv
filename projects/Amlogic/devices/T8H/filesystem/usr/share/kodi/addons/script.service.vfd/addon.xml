@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="script.service.vfd"
+       name="VFD service"
+       version="1.0.2"
+       provider-name="john doe">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+  </requires>
+  <extension point="xbmc.service" 
+	library="default.py"
+	start="startup">
+  </extension>
+  <extension point="xbmc.addon.metadata">
+        <summary>VFD</summary>
+        <description>VFD</description>
+        <platform>all</platform>
+  </extension>
+</addon>
