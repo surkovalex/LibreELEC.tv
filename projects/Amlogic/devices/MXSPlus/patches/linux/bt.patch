@@ -1,0 +1,23 @@
+diff --git a/arch/arm64/boot/dts/amlogic/gxbb_p201.dts b/arch/arm64/boot/dts/amlogic/gxbb_p201.dts
+index 2525d22..9c98b15 100644
+--- a/arch/arm64/boot/dts/amlogic/gxbb_p201.dts
++++ b/arch/arm64/boot/dts/amlogic/gxbb_p201.dts
+@@ -326,12 +326,12 @@
+ 			3: 250.0M    4: 333.3M    5: 400.0M
+ 			6: 500.0M    7: 666.7M */
+ 	};
+-	//bt-dev{
+-		//compatible = "amlogic, bt-dev";
+-		//dev_name = "bt-dev";
+-		//status = "ok";
+-		//gpio_reset = <&gpio       GPIOX_20       GPIO_ACTIVE_HIGH>;
+-	//};
++	bt-dev{
++		compatible = "amlogic, bt-dev";
++		dev_name = "bt-dev";
++		status = "ok";
++		gpio_reset = <&gpio       GPIOX_20       GPIO_ACTIVE_HIGH>;
++	};
+ 
+ 	rtc{
+ 		compatible = "amlogic, aml_vrtc";
