@@ -413,6 +413,13 @@ post_makeinstall_target() {
       cp $PKG_DIR/config/appliance.xml $INSTALL/usr/share/kodi/system/settings
     fi
 
+  mkdir -p $INSTALL/usr/share/kodi/media
+    if [ -n "$DEVICE" -a -f $PROJECT_DIR/$PROJECT/devices/$DEVICE/kodi/Splash.png ]; then
+      cp -R $PROJECT_DIR/$PROJECT/devices/$DEVICE/kodi/Splash.png $INSTALL/usr/share/kodi/media
+    elif [ -f $PROJECT_DIR/$PROJECT/kodi/Splash.png ]; then
+      cp -R $PROJECT_DIR/$PROJECT/kodi/Splash.png $INSTALL/usr/share/kodi/media
+    fi
+
   if [ "$KODI_EXTRA_FONTS" = yes ]; then
     mkdir -p $INSTALL/usr/share/kodi/media/Fonts
       cp $PKG_DIR/fonts/*.ttf $INSTALL/usr/share/kodi/media/Fonts
