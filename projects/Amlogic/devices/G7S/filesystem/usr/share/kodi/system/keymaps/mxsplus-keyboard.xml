@@ -1,0 +1,8 @@
+<keymap>
+    <global>
+	<keyboard>
+	    <key id="61472">playpause</key>
+	    <key id="61673">activatewindow(favourites)</key>
+	</keyboard>
+    </global>
+</keymap>
