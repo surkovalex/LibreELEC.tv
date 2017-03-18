@@ -1,0 +1,66 @@
+diff --git a/skins/Default/720p/service-LibreELEC-Settings-mainWindow.xml b/skins/Default/720p/service-LibreELEC-Settings-mainWindow.xml
+index 3a3ecd5..2ee0bad 100644
+--- a/skins/Default/720p/service-LibreELEC-Settings-mainWindow.xml
++++ b/skins/Default/720p/service-LibreELEC-Settings-mainWindow.xml
+@@ -313,9 +313,31 @@
+                         <aligny>center</aligny>
+                         <label>$INFO[Container(5533).Property(Arch)]</label>
+                     </control>	
++                    <control type="label">
++                        <left>20</left>
++                        <top>86</top>
++                        <width>400</width>
++                        <height>16</height>
++                        <font>font12</font>
++                        <textcolor>blue</textcolor>
++                        <align>left</align>
++                        <aligny>center</aligny>
++                        <label>Device:</label>
++                    </control>
++                    <control type="label">
++                        <left>140</left>
++                        <top>86</top>
++                        <width>400</width>
++                        <height>16</height>
++                        <font>font12</font>
++                        <textcolor>white</textcolor>
++                        <align>left</align>
++                        <aligny>center</aligny>
++                        <label>$INFO[Container(5533).Property(device)]</label>
++                    </control>
+                     <control type="textbox">
+                         <left>20</left>
+-                        <top>117</top>
++                        <top>127</top>
+                         <width>550</width>
+                         <height>100</height>
+                         <font>font10</font>
+@@ -333,7 +355,7 @@
+                     </control>
+                     <control type="image">
+                         <left>20</left>
+-                        <top>100</top>
++                        <top>105</top>
+                         <width>535</width>
+                         <height>2</height>
+                         <texture>default/green_line.png</texture>
+diff --git a/src/resources/lib/oeWindows.py b/src/resources/lib/oeWindows.py
+index 8f396ff..2c74214 100644
+--- a/src/resources/lib/oeWindows.py
++++ b/src/resources/lib/oeWindows.py
+@@ -99,6 +99,7 @@ class mainWindow(xbmcgui.WindowXMLDialog):
+             self.setProperty('distri', self.oe.DISTRIBUTION)
+             self.setProperty('version', self.oe.VERSION)
+             self.setProperty('build', self.oe.BUILD)
++            self.setProperty('device', self.oe.DEVICE)
+             self.setProperty('DIST_MEDIA', 'default')
+             if os.path.exists(self.oe.__media__ + self.oe.DISTRIBUTION):
+                 self.setProperty('DIST_MEDIA', self.oe.DISTRIBUTION)
+@@ -504,6 +505,7 @@ class wizard(xbmcgui.WindowXMLDialog):
+             self.setProperty('distri', self.oe.DISTRIBUTION)
+             self.setProperty('version', self.oe.VERSION)
+             self.setProperty('build', self.oe.BUILD)
++            self.setProperty('device', self.oe.DEVICE)
+             self.setProperty('DIST_MEDIA', 'default')
+             if os.path.exists(self.oe.__media__ + self.oe.DISTRIBUTION):
+                 self.setProperty('DIST_MEDIA', self.oe.DISTRIBUTION)
