@@ -250,7 +250,7 @@ fi
   MODVER=$(basename $(ls -d $INSTALL/lib/modules/*))
   find $INSTALL/lib/modules/$MODVER/ -name *.ko | \
     sed -e "s,$INSTALL/lib/modules/$MODVER/,," > $INSTALL/lib/modules/$MODVER/modules.order
-  $ROOT/$TOOLCHAIN/bin/depmod -b $INSTALL $MODVER 2> /dev/null
+  $ROOT/$TOOLCHAIN/bin/depmod -b $INSTALL -a -e -F "$BUILD/linux-$(kernel_version)/System.map" $MODVER
 
 # strip kernel modules
   if [ "$TARGET_KERNEL_ARCH" = "arm64" -a "$TARGET_ARCH" = "arm" ]; then
@@ -442,6 +442,11 @@ fi
           cp -PR $INSTALL_SRC_DIR/files/* $AML_PKG_DIR
         fi
 
+        # copy device tree image if any
+        if [ -f "$INSTALL/usr/share/bootloader/dtb.img" ]; then
+          cp "$INSTALL/usr/share/bootloader/dtb.img" $AML_PKG_DIR
+        fi
+
         # create the update package
         pushd "$AML_PKG_DIR" > /dev/null
         zip -rq update.zip *
@@ -457,6 +462,10 @@ fi
           echo "Creating Amlogic ZIP auto-install package"
           pushd sign > /dev/null
           echo --update_package=/sdcard/$IMAGE_NAME-update.zip > factory_update_param.aml
+          # copy device tree image if any
+          if [ -f "../dtb.img" ]; then
+            cp "../dtb.img" .
+          fi
           cp $INSTALL_SRC_DIR/files/recovery.img .
           if [ -f $INSTALL_SRC_DIR/files/aml_autoscript ]; then
             cp $INSTALL_SRC_DIR/files/aml_autoscript .
