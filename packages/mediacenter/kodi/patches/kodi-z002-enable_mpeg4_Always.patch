@@ -1,0 +1,12 @@
+diff -Naurp kodi-17.1-rc1-d2417c7/system/settings/settings.xml kodi-17.1-rc1-d2417c7-patch/system/settings/settings.xml
+--- kodi-17.1-rc1-d2417c7/system/settings/settings.xml	2017-02-22 11:31:46.000000000 +0200
++++ kodi-17.1-rc1-d2417c7-patch/system/settings/settings.xml	2017-02-22 11:36:15.000000000 +0200
+@@ -133,7 +133,7 @@
+         <setting id="videoplayer.useamcodecmpeg4" type="integer" label="39002">
+           <requirement>HAVE_AMCODEC</requirement>
+           <level>2</level>
+-          <default>800</default>
++          <default>0</default>
+           <constraints>
+             <options>
+               <option label="20420">9999</option>   <!-- Never -->
