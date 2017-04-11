@@ -1,0 +1,25 @@
+From c692affcb572ff9a32f2b06d36ebed94e4c625a3 Mon Sep 17 00:00:00 2001
+From: alex <surkov.alex@gmail.com>
+Date: Sun, 26 Feb 2017 10:11:35 -0500
+Subject: [PATCH 3/8] enable auto update
+
+---
+ src/resources/lib/modules/system.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/resources/lib/modules/system.py b/src/resources/lib/modules/system.py
+index 4161192..f58176c 100644
+--- a/src/resources/lib/modules/system.py
++++ b/src/resources/lib/modules/system.py
+@@ -141,7 +141,7 @@ class system:
+                     'settings': {
+                         'AutoUpdate': {
+                             'name': 32014,
+-                            'value': 'manual',
++                            'value': 'auto',
+                             'action': 'set_auto_update',
+                             'type': 'multivalue',
+                             'values': ['manual', 'auto'],
+-- 
+1.9.1
+
