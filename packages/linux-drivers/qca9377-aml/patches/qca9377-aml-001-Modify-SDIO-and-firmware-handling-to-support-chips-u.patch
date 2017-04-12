@@ -360,18 +360,19 @@ index f2c1d17..3ba95ed 100644
  module_param(mmcbusmode, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
  MODULE_PARM_DESC(mmcbusmode, "Set MMC driver Bus Mode: 1-SDR12, 2-SDR25, 3-SDR50, 4-DDR50, 5-SDR104");
  EXPORT_SYMBOL(mmcbusmode);
-@@ -74,7 +75,9 @@ module_param(mmcbuswidth, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+@@ -74,7 +75,10 @@ module_param(mmcbuswidth, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
  MODULE_PARM_DESC(mmcbuswidth, "Set MMC driver Bus Width: 1-1Bit, 4-4Bit, 8-8Bit");
  EXPORT_SYMBOL(mmcbuswidth);
  
 -unsigned int mmcclock = 0;
++//unsigned int mmcclock = 0;
 +//unsigned int mmcclock = 0;
 +//unsigned int mmcclock = 166666666;
 +unsigned int mmcclock = 200000000;
  module_param(mmcclock, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
  MODULE_PARM_DESC(mmcclock, "Set MMC driver Clock value");
  EXPORT_SYMBOL(mmcclock);
-@@ -95,7 +98,7 @@ unsigned int asyncintdelay = 2;
+@@ -95,7 +99,7 @@ unsigned int asyncintdelay = 2;
  module_param(asyncintdelay, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
  MODULE_PARM_DESC(asyncintdelay, "Delay clock count for aysnc interrupt, 2 is default, vaild values are 1 and 2");
  #else
@@ -380,7 +381,7 @@ index f2c1d17..3ba95ed 100644
  module_param(asyncintdelay, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
  MODULE_PARM_DESC(asyncintdelay, "Delay clock count for aysnc interrupt, 0 is default, vaild values are 1 and 2");
  #endif
-@@ -412,12 +415,6 @@ __HIFReadWrite(HIF_DEVICE *device,
+@@ -412,12 +416,6 @@ __HIFReadWrite(HIF_DEVICE *device,
                  tbuffer = device->dma_buffer;
                      /* copy the write data to the dma buffer */
                  AR_DEBUG_ASSERT(length <= HIF_DMA_BUFFER_SIZE);
@@ -393,7 +394,7 @@ index f2c1d17..3ba95ed 100644
                  memcpy(tbuffer, buffer, length);
                  bounced = TRUE;
              } else {
-@@ -440,12 +437,6 @@ __HIFReadWrite(HIF_DEVICE *device,
+@@ -440,12 +438,6 @@ __HIFReadWrite(HIF_DEVICE *device,
              if (BUFFER_NEEDS_BOUNCE(buffer)) {
                  AR_DEBUG_ASSERT(device->dma_buffer != NULL);
                  AR_DEBUG_ASSERT(length <= HIF_DMA_BUFFER_SIZE);
@@ -406,7 +407,7 @@ index f2c1d17..3ba95ed 100644
                  tbuffer = device->dma_buffer;
                  bounced = TRUE;
              } else {
-@@ -695,7 +686,7 @@ static int async_task(void *param)
+@@ -695,7 +687,7 @@ static int async_task(void *param)
      complete_and_exit(&device->async_completion, 0);
      return 0;
  }
@@ -415,7 +416,7 @@ index f2c1d17..3ba95ed 100644
  static A_INT32 IssueSDCommand(HIF_DEVICE *device, A_UINT32 opcode, A_UINT32 arg, A_UINT32 flags, A_UINT32 *resp)
  {
      struct mmc_command cmd;
-@@ -719,6 +710,7 @@ static A_INT32 IssueSDCommand(HIF_DEVICE *device, A_UINT32 opcode, A_UINT32 arg,
+@@ -719,6 +711,7 @@ static A_INT32 IssueSDCommand(HIF_DEVICE *device, A_UINT32 opcode, A_UINT32 arg,
      return err;
  }
  #endif
@@ -423,11 +424,11 @@ index f2c1d17..3ba95ed 100644
  A_STATUS ReinitSDIO(HIF_DEVICE *device)
  {
      A_INT32 err = 0;
-@@ -733,10 +725,12 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
+@@ -733,10 +726,12 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
      host = card->host;
  
      AR_DEBUG_PRINTF(ATH_DEBUG_TRACE, ("AR6000: +ReinitSDIO \n"));
-+	
++
 +//	err = sdio_reset_comm(card);
 +#if 1
      sdio_claim_host(func);
@@ -437,7 +438,7 @@ index f2c1d17..3ba95ed 100644
          /* 2.6.32 kernel does part of the SDIO initalization upon resume */
          A_BOOL lt_2_6_32 = (LINUX_VERSION_CODE<KERNEL_VERSION(2,6,32));
          if (lt_2_6_32) {
-@@ -783,19 +777,10 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
+@@ -783,19 +778,9 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
                  break;
              }
  
@@ -450,7 +451,7 @@ index f2c1d17..3ba95ed 100644
 -                }
 -                host->ocr = resp;
 -            }
- 
+-
              /* Issue CMD5, arg = ocr. Wait till card is ready  */
              for (i=0;i<100;i++) {
 -                err = IssueSDCommand(device, SD_IO_SEND_OP_COND, host->ocr, (MMC_RSP_R4 | MMC_CMD_BCR), &resp);
@@ -458,7 +459,7 @@ index f2c1d17..3ba95ed 100644
                  if (err) {
                      AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("ReinitSDIO: CMD5 failed : %d \n",err));
                      break;
-@@ -828,16 +813,14 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
+@@ -828,16 +813,16 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
                  break;
              }
          }
@@ -470,53 +471,56 @@ index f2c1d17..3ba95ed 100644
              err = Func0_CMD52ReadByte(card, SDIO_CCCR_SPEED, &cmd52_resp);
              if (err) {
                  AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("ReinitSDIO: CMD52 read to CCCR speed register failed  : %d \n",err));
--#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0))
+-#ifdef MMC_STATE_HIGHSPEED
 -                card->state &= ~MMC_STATE_HIGHSPEED;
 -#endif
-+     //           card->state &= ~MMC_CAP_SD_HIGHSPEED;
++//#ifdef MMC_STATE_HIGHSPEED
++//                card->state &= ~MMC_STATE_HIGHSPEED;
++//#endif
                  /* no need to break */
              } else {
                  err = Func0_CMD52WriteByte(card, SDIO_CCCR_SPEED, (cmd52_resp | SDIO_SPEED_EHS));
-@@ -845,24 +828,18 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
+@@ -845,24 +830,20 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
                      AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("ReinitSDIO: CMD52 write to CCCR speed register failed  : %d \n",err));
                      break;
                  }
--#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0))
+-#ifdef MMC_STATE_HIGHSPEED
 -                mmc_card_set_highspeed(card);
 -#endif
-+ //               mmc_card_set_highspeed(card);
++//#ifdef MMC_STATE_HIGHSPEED
++//                mmc_card_set_highspeed(card);
++//#endif
                  host->ios.timing = MMC_TIMING_SD_HS;
                  host->ops->set_ios(host, &host->ios);
              }
          }
  
          /* Set clock */
--#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0))
+-#ifdef MMC_STATE_HIGHSPEED
 -        if (mmc_card_highspeed(card)) {
 -#else
 -        if (mmc_card_hs(card)) {
 -#endif
 -            clock = 50000000;
 -        } else {
-+ //       if (mmc_card_highspeed(card)) {
-+ //           clock = 50000000;
-+ //       } else {
++//       if (mmc_card_highspeed(card)) {
++//           clock = 50000000;
++//       } else {
              clock = card->cis.max_dtr;
 -        }
 +//        }
  
          if (clock > host->f_max) {
              clock = host->f_max;
-@@ -891,7 +868,7 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
- 
+@@ -892,6 +873,7 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
      sdio_release_host(func);
      AR_DEBUG_PRINTF(ATH_DEBUG_TRACE, ("AR6000: -ReinitSDIO \n"));
--
+ 
 +#endif
      return (err) ? A_ERROR : A_OK;
  }
  
-@@ -1320,6 +1297,7 @@ static int hifDeviceInserted(struct sdio_func *func, const struct sdio_device_id
+@@ -1320,6 +1302,7 @@ static int hifDeviceInserted(struct sdio_func *func, const struct sdio_device_id
  /*
  TODO: MMC SDIO3.0 Setting should also be modified in ReInit() function when Power Manage work.
  */
@@ -524,27 +528,27 @@ index f2c1d17..3ba95ed 100644
          {
              A_UINT32 clock, clock_set = 12500000;
  #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,0)
-@@ -1438,15 +1416,11 @@ TODO: MMC SDIO3.0 Setting should also be modified in ReInit() function when Powe
+@@ -1438,15 +1421,11 @@ TODO: MMC SDIO3.0 Setting should also be modified in ReInit() function when Powe
              if (mmcclock > 0){
                  clock_set = mmcclock;
              }
--#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0))
+-#ifdef MMC_STATE_HIGHSPEED
 -            if (mmc_card_highspeed(func->card)){
 -#else
 -            if (mmc_card_hs(func->card)) {
 -#endif
 -                clock = 50000000;
 -            } else {
-+ //           if (mmc_card_highspeed(func->card)){
-+ //               clock = 50000000;
++//           if (mmc_card_highspeed(func->card)){
++//               clock = 50000000;
 +//            } else {
                  clock = func->card->cis.max_dtr;
 -            }
-+ //           }
++//            }
              if (clock > device->host->f_max){
                  clock = device->host->f_max;
              }
-@@ -1578,7 +1552,7 @@ TODO: MMC SDIO3.0 Setting should also be modified in ReInit() function when Powe
+@@ -1578,7 +1557,7 @@ TODO: MMC SDIO3.0 Setting should also be modified in ReInit() function when Powe
  
              sdio_release_host(func);
          }
@@ -553,7 +557,7 @@ index f2c1d17..3ba95ed 100644
          spin_lock_init(&device->lock);
  
          spin_lock_init(&device->asynclock);
-@@ -2070,12 +2044,10 @@ static int hifDeviceSuspend(struct device *dev)
+@@ -2070,10 +2049,9 @@ static int hifDeviceSuspend(struct device *dev)
                      return -1;
                  }
              } else {
@@ -563,13 +567,11 @@ index f2c1d17..3ba95ed 100644
 -                }
 +                  if (wma_suspend_target(temp_module, 0)) {
 +                     printk(KERN_ERR "wma_suspend_target failed.\n");
-+		  }
++                  }
              }
--
+ 
              if (pm_flag & MMC_PM_WAKE_SDIO_IRQ){
-                 AR_DEBUG_PRINTF(ATH_DEBUG_INFO, ("hifDeviceSuspend: wow enter\n"));
-                 config = HIF_DEVICE_POWER_DOWN;
-@@ -2295,9 +2267,7 @@ static HIF_DEVICE *
+@@ -2295,9 +2273,7 @@ static HIF_DEVICE *
  addHifDevice(struct sdio_func *func)
  {
      HIF_DEVICE *hifdevice = NULL;
@@ -579,7 +581,7 @@ index f2c1d17..3ba95ed 100644
      ENTER();
      AR_DEBUG_ASSERT(func != NULL);
      hifdevice = (HIF_DEVICE *)A_MALLOC(sizeof(HIF_DEVICE));
-@@ -2310,13 +2280,9 @@ addHifDevice(struct sdio_func *func)
+@@ -2310,13 +2286,9 @@ addHifDevice(struct sdio_func *func)
      hifdevice->func = func;
      hifdevice->powerConfig = HIF_DEVICE_POWER_UP;
      hifdevice->DeviceState = HIF_DEVICE_STATE_ON;
@@ -594,6 +596,7 @@ index f2c1d17..3ba95ed 100644
      return hifdevice;
  }
  
+
 diff --git a/Kbuild b/Kbuild
 index c696869..82b4439 100644
 --- a/Kbuild
