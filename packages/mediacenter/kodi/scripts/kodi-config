@@ -17,6 +17,11 @@
 #  along with OpenELEC.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+# kodi network wait
+if [ ! -d $HOME/.kodi ] ; then
+    mkdir -p $HOME/.cache/libreelec
+    cp -f /usr/share/kodi/config/network_wait $HOME/.cache/libreelec/network_wait
+fi
 
 # hack: make addon-bins executable
 # done in kodi on addon install. but just in case..

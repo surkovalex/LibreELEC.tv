@@ -326,6 +326,13 @@ post_makeinstall_target() {
       cp $PKG_DIR/config/appliance.xml $INSTALL/usr/share/kodi/system/settings
     fi
 
+  mkdir -p $INSTALL/usr/share/kodi/config/
+    if [ -n "$DEVICE" -a -f $PROJECT_DIR/$PROJECT/devices/$DEVICE/kodi/network_wait ]; then
+      cp -R $PROJECT_DIR/$PROJECT/devices/$DEVICE/kodi/network_wait $INSTALL/usr/share/kodi/config
+    elif [ -f $PROJECT_DIR/$PROJECT/kodi/network_wait ]; then
+      cp -R $PROJECT_DIR/$PROJECT/kodi/network_wait $INSTALL/usr/share/kodi/config
+    fi
+
   # update addon manifest
   ADDON_MANIFEST=$INSTALL/usr/share/kodi/system/addon-manifest.xml
   xmlstarlet ed -L -d "/addons/addon[text()='service.xbmc.versioncheck']" $ADDON_MANIFEST
