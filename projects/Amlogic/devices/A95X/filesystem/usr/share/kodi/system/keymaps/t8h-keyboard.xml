@@ -1,0 +1,7 @@
+<keymap>
+    <global>
+	<keyboard>
+	    <key id="61661">playpause</key>
+	</keyboard>
+    </global>
+</keymap>
