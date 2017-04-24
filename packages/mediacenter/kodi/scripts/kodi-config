@@ -18,9 +18,11 @@
 ################################################################################
 
 # kodi network wait
-if [ ! -d $HOME/.kodi ] ; then
+if [ -f /usr/share/kodi/config/network_wait ] ; then
+  if [ ! -f $HOME/.cache/libreelec/network_wait ] ; then
     mkdir -p $HOME/.cache/libreelec
     cp -f /usr/share/kodi/config/network_wait $HOME/.cache/libreelec/network_wait
+  fi
 fi
 
 # hack: make addon-bins executable
