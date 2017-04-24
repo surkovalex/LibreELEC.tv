@@ -343,7 +343,7 @@ post_makeinstall_target() {
   xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "repository.libreelec.tv" $ADDON_MANIFEST
   xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "service.libreelec.settings" $ADDON_MANIFEST
 
-  if [ $VFD_SUPPORT = yes ]; then
+  if [ "$VFD_SUPPORT" = yes ]; then
     xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "script.service.vfd" $ADDON_MANIFEST
   fi
 
