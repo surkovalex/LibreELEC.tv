@@ -1,0 +1,204 @@
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 947f093..7ad6b29 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -94,6 +94,12 @@
+ #include "guilib/LocalizeStrings.h"
+ #include "utils/CPUInfo.h"
+ #include "utils/SeekHandler.h"
++#include "utils/StringUtils.h"
++#include "utils/SysfsUtils.h"
++
++#include <string>
++using namespace std;
++using std::string;
+ 
+ #include "input/KeyboardLayoutManager.h"
+ 
+@@ -4586,6 +4592,17 @@ void CApplication::ProcessSlow()
+   // after the screensaver start time.
+   if(!m_renderGUI)
+     ResetScreenSaverTimer();
++
++  // Set current time on the VFD display
++  int vfd = open("/sys/devices/m1-vfd.26/led", O_RDWR);
++  if (vfd >= 0)
++  {
++    CDateTime time = CDateTime::GetCurrentDateTime();
++
++    std::string result = StringUtils::Format("%02i:%02i", time.GetHour1224(), time.GetMinute());
++    write(vfd, result.c_str(), strlen(result.c_str()));
++    close(vfd);
++  }
+ }
+ 
+ // Global Idle Time in Seconds
+diff --git a/xbmc/XBDateTime.cpp b/xbmc/XBDateTime.cpp
+index c09a3c1..55240b5 100644
+--- a/xbmc/XBDateTime.cpp
++++ b/xbmc/XBDateTime.cpp
+@@ -761,6 +761,26 @@ int CDateTime::GetHour() const
+   return st.wHour;
+ }
+ 
++int CDateTime::GetHour1224() const
++{
++  const std::string timeFormat = g_langInfo.GetTimeFormat();
++  bool use12hourclock = timeFormat.find('h') != std::string::npos;
++
++  SYSTEMTIME st;
++  GetAsSystemTime(st);
++
++  st.wHour1224=st.wHour;
++  if (use12hourclock)
++  {
++    if (st.wHour1224 > 11)
++      st.wHour1224 -= (12 * (st.wHour1224 > 12));
++    else
++      st.wHour1224 += (12 * (st.wHour1224 < 1));
++  }
++
++  return st.wHour1224;
++}
++
+ int CDateTime::GetMinute() const
+ {
+   SYSTEMTIME st;
+diff --git a/xbmc/XBDateTime.h b/xbmc/XBDateTime.h
+index 490485a..6bb77f5 100644
+--- a/xbmc/XBDateTime.h
++++ b/xbmc/XBDateTime.h
+@@ -72,6 +72,7 @@ public:
+ 
+   int GetDays() const;
+   int GetHours() const;
++  int GetHours1224() const;
+   int GetMinutes() const;
+   int GetSeconds() const;
+   int GetSecondsTotal() const;
+@@ -171,6 +172,7 @@ public:
+   int GetMonth() const;
+   int GetYear() const;
+   int GetHour() const;
++  int GetHour1224() const;
+   int GetMinute() const;
+   int GetSecond() const;
+   int GetDayOfWeek() const;
+diff --git a/xbmc/linux/PlatformDefs.h b/xbmc/linux/PlatformDefs.h
+index cd74de8..c803fb7 100644
+--- a/xbmc/linux/PlatformDefs.h
++++ b/xbmc/linux/PlatformDefs.h
+@@ -266,6 +266,7 @@ typedef struct _SYSTEMTIME
+   WORD wDayOfWeek;
+   WORD wDay;
+   WORD wHour;
++  WORD wHour1224;
+   WORD wMinute;
+   WORD wSecond;
+   WORD wMilliseconds;
+diff --git a/xbmc/linux/XTimeUtils.cpp b/xbmc/linux/XTimeUtils.cpp
+index 463b595..5ca1a0a 100644
+--- a/xbmc/linux/XTimeUtils.cpp
++++ b/xbmc/linux/XTimeUtils.cpp
+@@ -176,6 +176,7 @@ BOOL   FileTimeToSystemTime( const FILETIME* lpFileTime, LPSYSTEMTIME lpSystemTi
+   lpSystemTime->wDayOfWeek = tm_ft.tm_wday;
+   lpSystemTime->wDay = tm_ft.tm_mday;
+   lpSystemTime->wHour = tm_ft.tm_hour;
++  lpSystemTime->wHour1224 = tm_ft.tm_hour;
+   lpSystemTime->wMinute = tm_ft.tm_min;
+   lpSystemTime->wSecond = tm_ft.tm_sec;
+ 
+diff --git a/xbmc/storage/linux/UDevProvider.cpp b/xbmc/storage/linux/UDevProvider.cpp
+index 6fda5a5..08bd61d 100644
+--- a/xbmc/storage/linux/UDevProvider.cpp
++++ b/xbmc/storage/linux/UDevProvider.cpp
+@@ -32,6 +32,9 @@ extern "C" {
+ #include <poll.h>
+ }
+ 
++#include "utils/StringUtils.h"
++#include "utils/SysfsUtils.h"
++
+ static const char *get_mountpoint(const char *devnode)
+ {
+   static char buf[4096];
+@@ -154,8 +157,10 @@ void CUDevProvider::GetDisks(VECSOURCES& disks, bool removable)
+ 
+     // look for devices on the usb bus, or mounted on */media/ (sdcards), or optical devices
+     const char *bus = udev_device_get_property_value(device, "ID_BUS");
++    const char *sdc = udev_device_get_property_value(device, "ID_NAME");
+     const char *optical = udev_device_get_property_value(device, "ID_CDROM"); // matches also DVD, Blu-ray
+     bool isRemovable = ((bus        && strstr(bus, "usb")) ||
++                        (sdc        && strlen(sdc)) ||
+                         (optical    && strstr(optical,"1"))  ||
+                         (mountpoint && strstr(mountpoint, "/media/")));
+ 
+@@ -242,6 +247,11 @@ bool CUDevProvider::PumpDriveChangeEvents(IStorageEventsCallback *callback)
+     if (!dev)
+       return false;
+ 
++    const char *bus = udev_device_get_property_value(dev, "ID_BUS");
++    const char *sdc = udev_device_get_property_value(dev, "ID_NAME");
++    bool isUsb = (bus && strstr(bus, "usb"));
++    bool isSdc = (sdc && strlen(sdc));
++
+     const char *action  = udev_device_get_action(dev);
+     if (action)
+     {
+@@ -254,18 +264,34 @@ bool CUDevProvider::PumpDriveChangeEvents(IStorageEventsCallback *callback)
+         label = URIUtils::GetFileName(mountpoint);
+ 
+       const char *fs_usage = udev_device_get_property_value(dev, "ID_FS_USAGE");
+-      if (mountpoint && strcmp(action, "add") == 0 && (fs_usage && strcmp(fs_usage, "filesystem") == 0))
++      if (mountpoint && strcmp(action, "add") == 0 && (fs_usage && strcmp(fs_usage, "filesystem") == 0) && (isUsb || isSdc))
+       {
+         CLog::Log(LOGNOTICE, "UDev: Added %s", mountpoint);
+         if (callback)
+           callback->OnStorageAdded(label, mountpoint);
+         changed = true;
++
++        int vfd = open("/sys/devices/m1-vfd.26/dotled", O_RDWR);
++        if (vfd >= 0) {
++            const std::string result = isUsb ? "dotusb1" : "dotcard1";
++            write(vfd, result.c_str(), strlen(result.c_str()));
++        }
++        close(vfd);
++
+       }
+       if (strcmp(action, "remove") == 0 && (fs_usage && strcmp(fs_usage, "filesystem") == 0))
+       {
+         if (callback)
+           callback->OnStorageSafelyRemoved(label);
+         changed = true;
++
++        int vfd = open("/sys/devices/m1-vfd.26/dotled", O_RDWR);
++        if (vfd >= 0) {
++            const std::string result = isUsb ? "dotusb0" : "dotcard0";
++            write(vfd, result.c_str(), strlen(result.c_str()));
++        }
++        close(vfd);
++
+       }
+       // browse disk dialog is not wanted for blu-rays
+       const char *bd = udev_device_get_property_value(dev, "ID_CDROM_MEDIA_BD");
+diff --git a/xbmc/utils/AMLUtils.cpp b/xbmc/utils/AMLUtils.cpp
+index cd19ec7..d6c2cfe 100644
+--- a/xbmc/utils/AMLUtils.cpp
++++ b/xbmc/utils/AMLUtils.cpp
+@@ -148,6 +148,16 @@ bool aml_permissions()
+     {
+       CLog::Log(LOGERROR, "AML: no rw on /sys/class/tsync/enable");
+     }
++    int vfd = open("/sys/devices/m1-vfd.26/dotled", O_RDWR);
++    if (vfd >= 0)
++    {
++      const std::string result = aml_IsHdmiConnected() ? "dothdmi" : "dotcvbs";
++      write(vfd, result.c_str(), strlen(result.c_str()));
++      close(vfd);
++
++      //std::string cmd = "udevadm trigger --type=devices --action=add";
++      //system(cmd.c_str());
++    }
+ #ifndef TARGET_ANDROID
+     if (!SysfsUtils::HasRW("/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq"))
+     {
