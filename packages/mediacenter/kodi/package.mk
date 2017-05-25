@@ -31,6 +31,10 @@ PKG_LONGDESC="Kodi Media Center (which was formerly named Xbox Media Center or X
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
 
+if [ "$KODIPLAYER_DRIVER" = libamcodec ]; then
+    PKG_PATCH_DIRS="amlogic"
+fi
+
 PKG_CMAKE_SCRIPT="$ROOT/$PKG_BUILD/project/cmake/CMakeLists.txt"
 
   get_graphicdrivers
