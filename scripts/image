@@ -200,7 +200,7 @@ $SCRIPTS/install network
 [ "$TESTING" = "yes" ] && $SCRIPTS/install testing
 
 # Install gdb in all builds, including releases
-$SCRIPTS/install debug
+#$SCRIPTS/install debug
 
 # OEM packages
 [ "$OEM_SUPPORT" = "yes" ] && $SCRIPTS/install oem
