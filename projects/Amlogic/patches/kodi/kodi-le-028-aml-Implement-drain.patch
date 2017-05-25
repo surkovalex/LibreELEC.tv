@@ -1,4 +1,4 @@
-From 93b5c7fb21822df6ee715e5e36c872f3ba915226 Mon Sep 17 00:00:00 2001
+From 53dd9ef9292b279c67e90692d28861adf506269f Mon Sep 17 00:00:00 2001
 From: kszaq <kszaquitto@gmail.com>
 Date: Fri, 31 Mar 2017 23:39:05 +0200
 Subject: [PATCH] aml: Implement drain, lower prefill to 0.5, check timesize
@@ -12,7 +12,7 @@ Subject: [PATCH] aml: Implement drain, lower prefill to 0.5, check timesize
  4 files changed, 37 insertions(+), 10 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/AMLCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/AMLCodec.cpp
-index 11b08b5..b1954d4 100644
+index 11b08b5..6f64119 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/AMLCodec.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/AMLCodec.cpp
 @@ -1431,6 +1431,7 @@ bool CAMLCodec::OpenDecoder(CDVDStreamInfo &hints)
@@ -80,7 +80,7 @@ index 11b08b5..b1954d4 100644
 +    if (timesize > 0.5 && DequeueBuffer() == 0)
 +      rtn |= VC_PICTURE;
 +
-+    if (timesize < 1.0)
++    if (timesize < 1.0 || ((rtn & VC_PICTURE) && timesize < 2.0))
 +      rtn |= VC_BUFFER;
 +  }
  
@@ -151,6 +151,55 @@ index 9e57295..1458b8b 100644
    virtual const char* GetName(void) { return (const char*)m_pFormatName; }
  
  protected:
+-- 
+1.8.3.1
+
+From 4e5b2e6cfa41e69354b183879cea23d68ba9341c Mon Sep 17 00:00:00 2001
+From: kszaq <kszaquitto@gmail.com>
+Date: Mon, 8 May 2017 19:12:00 +0200
+Subject: [PATCH] aml: if no picture in last 1 second, return VC_BUFFER - this
+ should fix ff/rw freeze
+
+---
+ xbmc/cores/VideoPlayer/DVDCodecs/Video/AMLCodec.cpp | 17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/AMLCodec.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/AMLCodec.cpp
+index 4f438fe..9e02ed7 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/AMLCodec.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/AMLCodec.cpp
+@@ -2021,26 +2021,19 @@ int CAMLCodec::Decode(uint8_t *pData, size_t iSize, double dts, double pts)
+ 
+   float timesize(GetTimeSize());
+ 
+-  if (m_drain)
+-  {
++  if (timesize > 0.5 || m_drain)
+     if (DequeueBuffer() == 0)
+     {
+-      rtn = VC_PICTURE;
++      rtn |= VC_PICTURE;
+       m_noPictureLoop = 0;
+     }
+-    else if (++m_noPictureLoop == 10 || timesize == 0.0) // EOS
+-      rtn = VC_BUFFER;
+-  }
+-  else
+-  {
+-    m_noPictureLoop = 0;
+ 
+-    if (timesize > 0.5 && DequeueBuffer() == 0)
+-      rtn |= VC_PICTURE;
++  if (++m_noPictureLoop == 100 || timesize == 0.0) // EOS or stalled
++    rtn |= VC_BUFFER;
+ 
++  if (!m_drain)
+     if (timesize < 1.0 || ((rtn & VC_PICTURE) && timesize < 2.0))
+       rtn |= VC_BUFFER;
+-  }
+ 
+   if (g_advancedSettings.CanLogComponent(LOGVIDEO))
+   {
 -- 
 1.8.3.1
 
