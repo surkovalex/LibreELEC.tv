@@ -65,8 +65,14 @@ post_install() {
     rm $ROOT/$BUILD/initramfs/splash/splash-1200.png
     rm $ROOT/$BUILD/initramfs/splash/splash-2160.png
 
+    if [ $TARGET_ARCH = "arm" ]; then
+      COMPRESS="gzip -n -9 -f"
+    elif [ $TARGET_ARCH = "aarch64" ]; then
+      COMPRESS="lzop --best"
+    fi
+
     mkdir -p $ROOT/$BUILD/image/
     fakeroot -- sh -c \
-      "mkdir -p dev; mknod -m 600 dev/console c 5 1; find . | cpio -H newc -ov -R 0:0 | lzop --best > $ROOT/$BUILD/image/initramfs.cpio"
+      "mkdir -p dev; mknod -m 600 dev/console c 5 1; find . | cpio -H newc -ov -R 0:0 | $COMPRESS > $ROOT/$BUILD/image/initramfs.cpio"
   )
 }
