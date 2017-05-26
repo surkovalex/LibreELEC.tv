@@ -1,0 +1,14 @@
+set_bootloader_env("upgrade_step", "3");
+show_progress(0.750000, 0);
+ui_print("Writing kernel image");
+write_raw_image(package_extract_file("KERNEL"), "boot");
+show_progress(0.020000, 0);
+ui_print("Wiping System");
+format("ext4", "EMMC", "/dev/block/system", "0", "/system");
+mount("ext4", "EMMC", "/dev/block/system", "/system");
+ui_print("Writing system files");
+package_extract_dir("system", "/system");
+unmount("/system");
+set_bootloader_env("upgrade_step", "1");
+set_bootloader_env("force_auto_update", "false");
+ui_print("Image Installed Successfully");
