@@ -2,10 +2,19 @@
 # setup system defaults
 ################################################################################
 
-  # Setup controls which processor should be targeted for generated code.
-    TARGET_ARCH=aarch64
-    TARGET_CPU="cortex-a53"
-    TARGET_CPU_FLAGS="+crc+fp+simd"
+  # The TARGET_CPU variable controls which processor should be targeted for
+  # generated code.
+    case $TARGET_ARCH in
+      arm)
+        TARGET_CPU="cortex-a9"
+        TARGET_FLOAT="hard"
+        TARGET_FPU="neon-fp16"
+        ;;
+      aarch64)
+        TARGET_CPU="cortex-a53"
+        TARGET_CPU_FLAGS="+crc+fp+simd"
+        ;;
+    esac
 
   # Bootloader to use (syslinux / u-boot / atv-bootloader / bcm2835-bootloader)
     BOOTLOADER="u-boot"
@@ -39,11 +48,20 @@
 
   # Kernel to use. values can be:
   # default:  default mainline kernel
-    LINUX="custom"
-    KERNEL_VERSION="6e79ad4"
-    KERNEL_URL="https://github.com/kszaq/linux-amlogic-le/archive/$KERNEL_VERSION.tar.gz"
-    KERNEL_SOURCE_DIR="linux-amlogic-le-$KERNEL_VERSION*"
-    KERNEL_PATCH_DIRS="amlogic-3.14"
+    case $TARGET_ARCH in
+      aarch64)
+        LINUX="custom"
+        KERNEL_VERSION="6e79ad4"
+        KERNEL_URL="https://github.com/kszaq/linux-amlogic-le/archive/$KERNEL_VERSION.tar.gz"
+        KERNEL_SOURCE_DIR="linux-amlogic-le-$KERNEL_VERSION*"
+        KERNEL_PATCH_DIRS="amlogic-3.14"
+        ;;
+      arm)
+        LINUX="custom"
+        KERNEL_VERSION="a0e98d9"
+        KERNEL_URL="https://github.com/kszaq/linux/archive/$KERNEL_VERSION.tar.gz"
+        ;;
+      esac
 
 ################################################################################
 # setup build defaults
@@ -101,6 +119,14 @@
   # Space separated list is supported,
   # e.g. FIRMWARE="dvb-firmware misc-firmware wlan-firmware"
     FIRMWARE="misc-firmware wlan-firmware dvb-firmware brcmfmac_sdio-firmware-aml-all"
+
+  if [ "$TARGET_ARCH" = arm ]; then
+    KERNEL_TARGET="uImage"
+    MESON_FAMILY="8"
+    INITRAMFS_MODULES="softcursor bitblit font fbcon"
+    ANDROID_BOOTIMG_OPTIONS=""
+    ADDITIONAL_DRIVERS="RTL8192CU RTL8192DU RTL8192EU RTL8812AU media_build"
+  fi
 
   # build and install ATV IR remote support (yes / no)
     ATVCLIENT_SUPPORT="no"
