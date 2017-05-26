@@ -1,0 +1,29 @@
+diff --git a/xbmc/utils/CPUInfo.cpp b/xbmc/utils/CPUInfo.cpp
+index 5e2ebbd..99d9ee2 100644
+--- a/xbmc/utils/CPUInfo.cpp
++++ b/xbmc/utils/CPUInfo.cpp
+@@ -260,7 +260,15 @@ CCPUInfo::CCPUInfo(void)
+   }
+ #else
+   m_fProcStat = fopen("/proc/stat", "r");
+-  m_fProcTemperature = fopen("/proc/acpi/thermal_zone/THM0/temperature", "r");
++  m_fProcTemperature = fopen("/sys/devices/virtual/thermal/thermal_zone1/temp", "r");
++  if (m_fProcTemperature == NULL)
++    m_fProcTemperature = fopen("/sys/devices/virtual/thermal/thermal_zone0/temp", "r");
++  if (m_fProcTemperature == NULL)
++    m_fProcTemperature = fopen("/sys/class/hwmon/hwmon1/temp1_input", "r");
++  if (m_fProcTemperature == NULL)
++    m_fProcTemperature = fopen("/sys/class/hwmon/hwmon0/temp1_input", "r");
++  if (m_fProcTemperature == NULL)
++    m_fProcTemperature = fopen("/proc/acpi/thermal_zone/THM0/temperature", "r");
+   if (m_fProcTemperature == NULL)
+     m_fProcTemperature = fopen("/proc/acpi/thermal_zone/THRM/temperature", "r");
+   if (m_fProcTemperature == NULL)
+@@ -613,7 +604,6 @@ bool CCPUInfo::getTemperature(CTemperatu
+     if (!ret)
+     {
+       ret = fscanf(m_fProcTemperature, "%d", &value);
+-      value = value / 1000;
+       scale = 'c';
+       ret++;
+     }
