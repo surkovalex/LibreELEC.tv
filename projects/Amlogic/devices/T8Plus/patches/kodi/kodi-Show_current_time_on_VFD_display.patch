@@ -1,0 +1,35 @@
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index b8ff91b..5340ea7 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -94,6 +94,12 @@
+ #include "guilib/LocalizeStrings.h"
+ #include "utils/CPUInfo.h"
+ #include "utils/SeekHandler.h"
++#include "utils/StringUtils.h"
++#include "utils/SysfsUtils.h"
++
++#include <string>
++using namespace std;
++using std::string;
+ 
+ #include "input/KeyboardLayoutManager.h"
+ 
+@@ -4583,6 +4589,17 @@ void CApplication::ProcessSlow()
+   // after the screensaver start time.
+   if(!m_renderGUI)
+     ResetScreenSaverTimer();
++
++  // Set current time on the VFD display
++  int vfd = open("/sys/devices/platform/m1-vfd.0/led", O_RDWR);
++  if (vfd >= 0)
++  {
++    CDateTime time = CDateTime::GetCurrentDateTime();
++
++    std::string result = StringUtils::Format("%02i:%02i", time.GetHour(), time.GetMinute());
++    write(vfd, result.c_str(), strlen(result.c_str()));
++    close(vfd);
++  }
+ }
+ 
+ // Global Idle Time in Seconds
