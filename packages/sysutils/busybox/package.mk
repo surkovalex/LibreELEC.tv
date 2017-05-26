@@ -239,10 +239,10 @@ makeinstall_init() {
     touch $INSTALL/etc/fstab
     ln -sf /proc/self/mounts $INSTALL/etc/mtab
 
-  if [ -n "$DEVICE" -a -f $PROJECT_DIR/$PROJECT/devices/$DEVICE/initramfs/platform_init ]; then
-    cp $PROJECT_DIR/$PROJECT/devices/$DEVICE/initramfs/platform_init $INSTALL
-  elif [ -f $PROJECT_DIR/$PROJECT/initramfs/platform_init ]; then
-    cp $PROJECT_DIR/$PROJECT/initramfs/platform_init $INSTALL
+  if [ -n "$DEVICE" -a -f $PROJECT_DIR/$PROJECT/devices/$DEVICE/initramfs/platform_init.$TARGET_ARCH ]; then
+    cp $PROJECT_DIR/$PROJECT/devices/$DEVICE/initramfs/platform_init.$TARGET_ARCH $INSTALL/platform_init
+  elif [ -f $PROJECT_DIR/$PROJECT/initramfs/platform_init.$TARGET_ARCH ]; then
+    cp $PROJECT_DIR/$PROJECT/initramfs/platform_init.$TARGET_ARCH $INSTALL/platform_init
   fi
   if [ -f $INSTALL/platform_init ]; then
     chmod 755 $INSTALL/platform_init
