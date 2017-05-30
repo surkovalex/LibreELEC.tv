@@ -125,7 +125,6 @@
     MESON_FAMILY="8"
     INITRAMFS_MODULES="softcursor bitblit font fbcon"
     ANDROID_BOOTIMG_OPTIONS=""
-    ADDITIONAL_DRIVERS="RTL8192CU RTL8192DU RTL8192EU RTL8812AU media_build"
   fi
 
   # build and install ATV IR remote support (yes / no)
