@@ -1,19 +1,19 @@
-From 46aab0b0856eeaa855c430ddd36ac97203afa43b Mon Sep 17 00:00:00 2001
+From 8e965398c32669dfa9aa37c22b179e6015151fca Mon Sep 17 00:00:00 2001
 From: Alex Deryskyba <alex@codesnake.com>
 Date: Wed, 1 Jul 2015 23:37:11 +0200
-Subject: [PATCH 3/5] [aml] Add support for 4k resolutions
+Subject: [PATCH] Add support for 4k resolutions
 
 ---
- xbmc/utils/AMLUtils.cpp                     |   16 ++++++++--------
- xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp |   23 +++++++++++++++++++----
- xbmc/windowing/egl/EGLNativeTypeAmlogic.h   |    2 ++
+ xbmc/utils/AMLUtils.cpp                     | 16 ++++++++--------
+ xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp | 23 +++++++++++++++++++----
+ xbmc/windowing/egl/EGLNativeTypeAmlogic.h   |  2 ++
  3 files changed, 29 insertions(+), 12 deletions(-)
 
 diff --git a/xbmc/utils/AMLUtils.cpp b/xbmc/utils/AMLUtils.cpp
-index 80fb453..65286de 100644
+index 0660ee4..96a26f7 100644
 --- a/xbmc/utils/AMLUtils.cpp
 +++ b/xbmc/utils/AMLUtils.cpp
-@@ -463,8 +463,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
+@@ -453,8 +453,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
    }
    else if (StringUtils::EqualsNoCase(fromMode, "4k2ksmpte") || StringUtils::EqualsNoCase(fromMode, "smpte24hz"))
    {
@@ -24,7 +24,7 @@ index 80fb453..65286de 100644
      res->iScreenWidth = 4096;
      res->iScreenHeight= 2160;
      res->fRefreshRate = 24;
-@@ -481,8 +481,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
+@@ -471,8 +471,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
    }
    else if (StringUtils::EqualsNoCase(fromMode, "4k2k24hz") || StringUtils::EqualsNoCase(fromMode, "2160p24hz"))
    {
@@ -35,7 +35,7 @@ index 80fb453..65286de 100644
      res->iScreenWidth = 3840;
      res->iScreenHeight= 2160;
      res->fRefreshRate = 24;
-@@ -490,8 +490,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
+@@ -480,8 +480,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
    }
    else if (StringUtils::EqualsNoCase(fromMode, "4k2k25hz") || StringUtils::EqualsNoCase(fromMode, "2160p25hz"))
    {
@@ -46,7 +46,7 @@ index 80fb453..65286de 100644
      res->iScreenWidth = 3840;
      res->iScreenHeight= 2160;
      res->fRefreshRate = 25;
-@@ -508,8 +508,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
+@@ -498,8 +498,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
    }
    else if (StringUtils::EqualsNoCase(fromMode, "4k2k30hz") || StringUtils::EqualsNoCase(fromMode, "2160p30hz"))
    {
@@ -58,7 +58,7 @@ index 80fb453..65286de 100644
      res->iScreenHeight= 2160;
      res->fRefreshRate = 30;
 diff --git a/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp b/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
-index 88cd385..3bfb0c6 100644
+index 4760c78..65a5175 100644
 --- a/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
 +++ b/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
 @@ -64,7 +64,22 @@ void CEGLNativeTypeAmlogic::Initialize()
@@ -95,7 +95,7 @@ index 88cd385..3bfb0c6 100644
    m_nativeWindow = nativeWindow;
  
    SetFramebufferResolution(nativeWindow->width, nativeWindow->height);
-@@ -244,8 +259,8 @@ void CEGLNativeTypeAmlogic::SetFramebufferResolution(int width, int height) cons
+@@ -247,8 +262,8 @@ void CEGLNativeTypeAmlogic::SetFramebufferResolution(int width, int height) cons
      {
        vinfo.xres = width;
        vinfo.yres = height;
@@ -120,5 +120,5 @@ index cfb33ca..cf60134 100644
 +  RESOLUTION_INFO m_maxResolution;
  };
 -- 
-1.7.10.4
+1.9.1
 

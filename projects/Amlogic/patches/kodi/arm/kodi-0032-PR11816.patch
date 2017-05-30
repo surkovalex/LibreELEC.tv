@@ -1,4 +1,4 @@
-From 5bbb7f897eeba38de008f5b04717249c156cd63d Mon Sep 17 00:00:00 2001
+From 2753372e2ae9459f5a877cf313d9e3cb431d4f89 Mon Sep 17 00:00:00 2001
 From: Stanislav Vlasic <svlasic@gmail.com>
 Date: Mon, 6 Mar 2017 04:23:33 +0100
 Subject: [PATCH] Fix EGLNativeTypeAmlogic for probing resolutions
@@ -14,10 +14,10 @@ end user may actually select unsupported resolution.
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp b/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
-index 731b8db..4e3f19c 100644
+index 88cd385..4760c78 100644
 --- a/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
 +++ b/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
-@@ -171,8 +171,11 @@ bool CEGLNativeTypeAmlogic::ProbeResolutions(std::vector<RESOLUTION_INFO> &resol
+@@ -160,8 +160,11 @@ bool CEGLNativeTypeAmlogic::ProbeResolutions(std::vector<RESOLUTION_INFO> &resol
    RESOLUTION_INFO res;
    for (std::vector<std::string>::const_iterator i = probe_str.begin(); i != probe_str.end(); ++i)
    {
@@ -31,3 +31,6 @@ index 731b8db..4e3f19c 100644
    }
    return resolutions.size() > 0;
  
+-- 
+1.9.1
+
