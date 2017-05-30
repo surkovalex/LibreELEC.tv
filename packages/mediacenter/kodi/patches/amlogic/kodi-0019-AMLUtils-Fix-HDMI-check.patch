@@ -1,0 +1,33 @@
+From 94b9783793c9e4017db37fcb567e9016d30fc812 Mon Sep 17 00:00:00 2001
+From: croniccorey <cronmod.dev@gmail.com>
+Date: Mon, 4 Jan 2016 04:33:16 -0500
+Subject: [PATCH] AMLUtils: Fix HDMI check
+
+- hpd_state is not always '2' when HDMI is connected but seems to always be '0' when HDMI is not connected.
+---
+ xbmc/utils/AMLUtils.cpp | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/xbmc/utils/AMLUtils.cpp b/xbmc/utils/AMLUtils.cpp
+index e9ac90d..0660ee4 100644
+--- a/xbmc/utils/AMLUtils.cpp
++++ b/xbmc/utils/AMLUtils.cpp
+@@ -319,12 +319,10 @@ bool aml_IsHdmiConnected()
+ {
+   int hpd_state;
+   SysfsUtils::GetInt("/sys/class/amhdmitx/amhdmitx0/hpd_state", hpd_state);
+-  if (hpd_state == 2)
+-  {
++  if (hpd_state != 0)
+     return 1;
+-  }
+-
+-  return 0;
++  else
++    return 0;
+ }
+ 
+ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
+-- 
+1.9.1
+

@@ -1,0 +1,33 @@
+From 82a59d9b40fd9e40423b9b599c6361f942ddaf7e Mon Sep 17 00:00:00 2001
+From: alex <surkov.alex@gmail.com>
+Date: Sat, 27 May 2017 21:12:36 +0300
+Subject: [PATCH] only force software decoding of problem mpeg2 vob
+
+---
+ xbmc/cores/VideoPlayer/VideoPlayer.cpp | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/VideoPlayer.cpp b/xbmc/cores/VideoPlayer/VideoPlayer.cpp
+index 0285de2..c6c943f 100644
+--- a/xbmc/cores/VideoPlayer/VideoPlayer.cpp
++++ b/xbmc/cores/VideoPlayer/VideoPlayer.cpp
+@@ -3766,6 +3766,16 @@ bool CVideoPlayer::OpenVideoStream(CDVDStreamInfo& hint, bool reset)
+     }
+   }
+ 
++  if (m_pInputStream)
++   {
++     std::string filename = m_pInputStream->GetFileName();
++     if (StringUtils::EndsWithNoCase(filename, "vob"))
++     {
++       CLog::Log(LOGDEBUG, "CDVDPlayer::OpenVideoStream -- %s", filename.c_str());
++       hint.software = true;
++     }
++   }
++
+   CDVDInputStream::IMenus* pMenus = dynamic_cast<CDVDInputStream::IMenus*>(m_pInputStream);
+   if(pMenus && pMenus->IsInMenu())
+     hint.stills = true;
+-- 
+1.9.1
+

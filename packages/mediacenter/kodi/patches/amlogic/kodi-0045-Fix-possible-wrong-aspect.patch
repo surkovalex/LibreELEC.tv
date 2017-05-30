@@ -1,0 +1,25 @@
+From 628bbcdca5aae394706553fba483aa978083284d Mon Sep 17 00:00:00 2001
+From: Anton Fedchin <afedchin@ruswizards.com>
+Date: Sat, 23 Jan 2016 10:21:32 +0300
+Subject: [PATCH] Fix possible wrong aspect.
+
+---
+ xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp b/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp
+index 89db27c..daee418 100644
+--- a/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp
++++ b/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp
+@@ -181,7 +181,7 @@ void CVideoPlayerVideo::OpenStream(CDVDStreamInfo &hint, CDVDVideoCodec* codec)
+   }
+ 
+   // use aspect in stream if available
+-  if(hint.forced_aspect)
++  if (hint.forced_aspect && !std::isnan(hint.aspect))
+     m_fForcedAspectRatio = hint.aspect;
+   else
+     m_fForcedAspectRatio = 0.0;
+-- 
+1.9.1
+

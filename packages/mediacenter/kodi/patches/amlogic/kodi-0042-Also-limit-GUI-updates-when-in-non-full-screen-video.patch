@@ -1,0 +1,34 @@
+From 723c347d19937be61c482c07c00fefabb58d260b Mon Sep 17 00:00:00 2001
+From: popcornmix <popcornmix@gmail.com>
+Date: Tue, 14 Apr 2015 20:51:14 +0100
+Subject: [PATCH] Also limit GUI updates when in non full-screen video mode
+
+---
+ xbmc/Application.cpp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/Application.cpp b/xbmc/Application.cpp
+index 593acaf..f9aed64 100644
+--- a/xbmc/Application.cpp
++++ b/xbmc/Application.cpp
+@@ -2771,7 +2771,7 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
+ #if defined(TARGET_RASPBERRY_PI) || defined(HAS_IMXVPU)
+     // This code reduces rendering fps of the GUI layer when playing videos in fullscreen mode
+     // it makes only sense on architectures with multiple layers
+-    if (g_graphicsContext.IsFullScreenVideo() && !m_pPlayer->IsPausedPlayback() && m_pPlayer->IsRenderingVideoLayer())
++    if (m_pPlayer->IsPlayingVideo() && !m_pPlayer->IsPausedPlayback() && m_pPlayer->IsRenderingVideoLayer())
+       fps = CSettings::GetInstance().GetInt(CSettings::SETTING_VIDEOPLAYER_LIMITGUIUPDATE);
+ #endif
+ 
+@@ -2784,6 +2784,8 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
+     {
+       if (!m_skipGuiRender)
+         g_windowManager.Process(CTimeUtils::GetFrameTime());
++      else if (!g_graphicsContext.IsFullScreenVideo())
++        g_windowManager.FrameMove();
+     }
+     g_windowManager.FrameMove();
+   }
+-- 
+1.9.1
+
