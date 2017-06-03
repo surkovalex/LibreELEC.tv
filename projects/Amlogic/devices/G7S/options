@@ -3,5 +3,5 @@
     KERNEL_MAKE_EXTRACMD="gxbb_p200_2G.dtb"
 
   # build with vfd support
-    VFD_SUPPORT = "yes"
+    VFD_SUPPORT="yes"
 
