@@ -19,7 +19,7 @@
 ################################################################################
 
 PKG_NAME="libevent"
-PKG_VERSION="2.0.22-stable"
+PKG_VERSION="2.1.8-stable"
 PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="BSD"
@@ -33,10 +33,8 @@ PKG_IS_ADDON="no"
 
 PKG_AUTORECONF="yes"
 
-PKG_MAINTAINER="unofficial.addon.pro"
-
-PKG_CONFIGURE_OPTS_TARGET="--disable-shared --enable-static --enable-openssl"
+PKG_CONFIGURE_OPTS_TARGET="--disable-libevent-regress --disable-samples --disable-shared --enable-static --enable-openssl"
 
 post_makeinstall_target() {
-  rm -r $INSTALL
+  rm -fr $INSTALL
 }
