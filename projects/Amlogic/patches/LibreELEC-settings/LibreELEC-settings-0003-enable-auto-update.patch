@@ -1,7 +1,7 @@
-From c692affcb572ff9a32f2b06d36ebed94e4c625a3 Mon Sep 17 00:00:00 2001
+From 924c1463d54b520d6fde7fd309b1e1a95d4c6dc2 Mon Sep 17 00:00:00 2001
 From: alex <surkov.alex@gmail.com>
 Date: Sun, 26 Feb 2017 10:11:35 -0500
-Subject: [PATCH 3/8] enable auto update
+Subject: [PATCH 3/6] enable auto update
 
 ---
  src/resources/lib/modules/system.py | 2 +-
