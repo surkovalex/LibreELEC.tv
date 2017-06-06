@@ -7,7 +7,7 @@ import sys
 import os
 import subprocess
 
-addon = xbmcaddon.Addon(id='script.service.m10vfd')
+addon = xbmcaddon.Addon(id='script.service.vfd')
 
 class clockThreadClass(threading.Thread):
     def run(self):

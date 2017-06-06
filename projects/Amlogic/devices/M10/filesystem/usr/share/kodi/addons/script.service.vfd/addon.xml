@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="script.service.m10vfd"
+<addon id="script.service.vfd"
        name="M10 VFD"
-       version="1.0.2"
+       version="1.0.3"
        provider-name="john doe">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
