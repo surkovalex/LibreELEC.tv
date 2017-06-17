@@ -1,1 +1,1909 @@
-../../../../../../.private/0002-add-M10-VFD-driver.patch
+From bce7601213d2fcfd8f91098b253198a5747da8a5 Mon Sep 17 00:00:00 2001
+From: alex <surkov.alex@gmail.com>
+Date: Wed, 14 Jun 2017 14:33:23 +0300
+Subject: [PATCH] add M10 VFD driver
+
+---
+ Makefile                               |   1 -
+ arch/arm/mach-meson8/include/mach/sd.h |  15 +-
+ arch/arm/mach-meson8/pinctrl.c         |  10 -
+ arch/arm/mach-meson8/pm.c              |  24 +-
+ drivers/amlogic/Kconfig                |   2 +-
+ drivers/amlogic/Makefile               |   2 +
+ drivers/amlogic/vfd/Kconfig            |  19 +
+ drivers/amlogic/vfd/Makefile           |  11 +
+ drivers/amlogic/vfd/aml.dtd            |  17 +
+ drivers/amlogic/vfd/fd268_drive.h      | 196 +++++++++
+ drivers/amlogic/vfd/sm1628.c           | 388 ++++++++++++++++
+ drivers/amlogic/vfd/sm1628.h           | 221 ++++++++++
+ drivers/amlogic/vfd/vfd.c              | 779 +++++++++++++++++++++++++++++++++
+ drivers/amlogic/vfd/vfd_comm.h         |   5 +
+ include/linux/input/vfd.h              |  24 +
+ 15 files changed, 1694 insertions(+), 20 deletions(-)
+ create mode 100644 drivers/amlogic/vfd/Kconfig
+ create mode 100644 drivers/amlogic/vfd/Makefile
+ create mode 100644 drivers/amlogic/vfd/aml.dtd
+ create mode 100644 drivers/amlogic/vfd/fd268_drive.h
+ create mode 100644 drivers/amlogic/vfd/sm1628.c
+ create mode 100644 drivers/amlogic/vfd/sm1628.h
+ create mode 100644 drivers/amlogic/vfd/vfd.c
+ create mode 100644 drivers/amlogic/vfd/vfd_comm.h
+ create mode 100644 include/linux/input/vfd.h
+
+diff --git a/Makefile b/Makefile
+index d58a857..9810c1b 100755
+--- a/Makefile
++++ b/Makefile
+@@ -371,7 +371,6 @@ KBUILD_CPPFLAGS := -D__KERNEL__
+ 
+ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+ 		   -fno-strict-aliasing -fno-common \
+-		   -Werror-implicit-function-declaration \
+ 		   -Wno-format-security \
+ 		   -fno-delete-null-pointer-checks \
+ 		   -std=gnu89
+diff --git a/arch/arm/mach-meson8/include/mach/sd.h b/arch/arm/mach-meson8/include/mach/sd.h
+index 9c68f87..238f6ec 100644
+--- a/arch/arm/mach-meson8/include/mach/sd.h
++++ b/arch/arm/mach-meson8/include/mach/sd.h
+@@ -655,11 +655,8 @@ extern struct mmc_host *sdio_host;
+ #define POR_BOOT_VALUE (R_BOOT_DEVICE_FLAG & 7)
+ #endif
+ 
+-#define POR_NAND_BOOT() ((POR_BOOT_VALUE == 7) || (POR_BOOT_VALUE == 6))
+-//#define POR_SPI_BOOT() ((POR_BOOT_VALUE == 5) || (POR_BOOT_VALUE == 4))
+-#define POR_SPI_BOOT()	((IS_MESON_M8M2_CPU)?(POR_BOOT_VALUE == 5) : ((POR_BOOT_VALUE == 5)||(POR_BOOT_VALUE == 4)))
+-//#define POR_EMMC_BOOT() (POR_BOOT_VALUE == 3)
+-#define POR_EMMC_BOOT()	((IS_MESON_M8M2_CPU)?((POR_BOOT_VALUE == 3)||(POR_BOOT_VALUE == 1)) : (POR_BOOT_VALUE == 3))
++#define POR_SPI_BOOT() ((POR_BOOT_VALUE == 5) || (POR_BOOT_VALUE == 4))
++#define POR_EMMC_BOOT() (POR_BOOT_VALUE == 3)
+ 
+ #define POR_CARD_BOOT() (POR_BOOT_VALUE == 0)
+ 
+@@ -676,12 +673,18 @@ extern int ext_codec;
+ 
+ #ifndef CONFIG_MESON_TRUSTZONE
+ // P_AO_SECURE_REG1 is "Secure Register 1" in <M8-Secure-AHB-Registers.doc>
++#if 0
+ #define aml_jtag_gpioao() do{\
+     aml_clr_reg32_mask(P_AO_SECURE_REG1, ((1<<5) | (1<<9))); \
+     if(!ext_codec)\
+         aml_set_reg32_mask(P_AO_SECURE_REG1, ((1<<8) | (1<<1))); \
+ }while(0)
+-
++#else
++#define aml_jtag_gpioao() do{\
++    aml_clr_reg32_mask(P_AO_SECURE_REG1, ((1<<5) | (1<<9))); \
++    aml_clr_reg32_mask(P_AO_SECURE_REG1, ((1<<8) | (1<<1))); \
++}while(0)
++#endif
+ #define aml_jtag_sd() do{\
+     aml_clr_reg32_mask(P_AO_SECURE_REG1, ((1<<8) | (1<<1))); \
+     aml_set_reg32_mask(P_AO_SECURE_REG1, ((1<<5) | (1<<9))); \
+diff --git a/arch/arm/mach-meson8/pinctrl.c b/arch/arm/mach-meson8/pinctrl.c
+index 5a7c1ee..b77668c 100755
+--- a/arch/arm/mach-meson8/pinctrl.c
++++ b/arch/arm/mach-meson8/pinctrl.c
+@@ -309,16 +309,6 @@ static int m8_set_pullup(unsigned int pin,unsigned int config)
+ 	u16 pullarg = AML_PINCONF_UNPACK_PULL_ARG(config);
+ 	u16 pullen = AML_PINCONF_UNPACK_PULL_EN(config);
+ 	ret=m8_pin_to_pullup(pin,&reg,&bit,&bit_en);
+-	/*This on set BOOT_0 pull up en register*/
+-	if(IS_MESON_M8M2_CPU && pin == BOOT_0){
+-		if(!ret){
+-			if(pullen)
+-				aml_set_reg32_mask(p_pull_upen_addr[reg],1<<bit_en);
+-			else
+-				aml_clr_reg32_mask(p_pull_upen_addr[reg],1<<bit_en);
+-		}
+-		return ret;
+-	}
+ 	if(!ret)
+ 	{
+ 		if(pullen){
+diff --git a/arch/arm/mach-meson8/pm.c b/arch/arm/mach-meson8/pm.c
+index 754f727..857354d 100755
+--- a/arch/arm/mach-meson8/pm.c
++++ b/arch/arm/mach-meson8/pm.c
+@@ -15,6 +15,9 @@
+ #include <linux/clk.h>
+ #include <linux/spinlock.h>
+ #include <linux/clk.h>
++#ifdef CONFIG_VFD_SM1628
++#include <linux/input/vfd.h>
++#endif
+ #include <linux/fs.h>
+ 
+ #include <asm/cacheflush.h>
+@@ -223,6 +226,9 @@ static void meson_system_early_suspend(struct early_suspend *h)
+ 	}
+ 		//early_clk_switch(OFF);
+ 		//early_power_gate_switch(OFF);
++		//led off
++		CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, 1<<15);
++		SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, 1<<31);
+ 		early_suspend_flag = 1;
+ 	}
+ }
+@@ -235,6 +241,9 @@ static void meson_system_late_resume(struct early_suspend *h)
+ 		early_suspend_flag = 0;
+ 		printk(KERN_INFO "%s\n",__func__);
+ 	}
++			//led on
++		CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, 1<<15);
++		CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, 1<<31);
+ }
+ #endif
+ 
+@@ -345,17 +354,28 @@ static struct platform_suspend_ops meson_pm_ops = {
+ 
+ static void m6ref_set_vccx2(int power_on)
+ {
+-	/*
++#ifdef CONFIG_VFD_SM1628
++               int i;
++#endif
+     if(power_on == OFF) {
+         printk("m6ref_set_vccx2: OFF");
++#ifdef CONFIG_VFD_SM1628
++        MDrv_FrontPnl_Update((char *)"@OFF", 0);
++        for (i=0;i<1000;i++)
++                       udelay(1000);
++                       MDrv_FrontPnl_Update((char *)"@", 0);
++#endif
+         CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, 1<<15);
+         SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, 1<<31);
+     } else {
+         printk("m6ref_set_vccx2: ON");
+         CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, 1<<15);
+         CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, 1<<31);
++#ifdef CONFIG_VFD_SM1628
++        aml_vfd_cur_led_value_init();
++#endif
+     }
+-	*/
++
+     return;
+ }
+ 
+diff --git a/drivers/amlogic/Kconfig b/drivers/amlogic/Kconfig
+index 4ba535f..fd45690 100755
+--- a/drivers/amlogic/Kconfig
++++ b/drivers/amlogic/Kconfig
+@@ -27,7 +27,7 @@ source "drivers/amlogic/smartcard/Kconfig"
+ source "drivers/amlogic/thermal/Kconfig"
+ source "drivers/amlogic/watchdog/Kconfig"
+ source "drivers/amlogic/spi/Kconfig"
+-
++source "drivers/amlogic/vfd/Kconfig"
+ #
+ #	Block devices
+ #
+diff --git a/drivers/amlogic/Makefile b/drivers/amlogic/Makefile
+index 922d980..465be2f 100755
+--- a/drivers/amlogic/Makefile
++++ b/drivers/amlogic/Makefile
+@@ -131,3 +131,5 @@ obj-$(CONFIG_MESON_TRUSTZONE) += secure_monitor/
+ obj-y += spi/
+ 
+ obj-y += defendkey/
++
++obj-y += vfd/
+diff --git a/drivers/amlogic/vfd/Kconfig b/drivers/amlogic/vfd/Kconfig
+new file mode 100644
+index 0000000..3a448c2
+--- /dev/null
++++ b/drivers/amlogic/vfd/Kconfig
+@@ -0,0 +1,19 @@
++#
++# VFD configuration
++#
++
++config VFD_ENABLE
++	tristate "VFD support"
++	default n
++	help
++	  Say Y here if you want to use the amlogic VFD control.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called .
++
++config VFD_SM1628
++	depends on VFD_ENABLE
++	bool "SM1628 MCU support"
++	default n
++	help
++	  Use SM1628 MCU as controller
+diff --git a/drivers/amlogic/vfd/Makefile b/drivers/amlogic/vfd/Makefile
+new file mode 100644
+index 0000000..87ac415
+--- /dev/null
++++ b/drivers/amlogic/vfd/Makefile
+@@ -0,0 +1,11 @@
++#
++# Makefile for the VFD drivers.
++#
++
++# Each configuration option enables a list of files.
++
++obj-$(CONFIG_VFD_ENABLE)		+= vfd.o
++obj-$(CONFIG_VFD_SM1628)		+= sm1628.o
++
++
++
+diff --git a/drivers/amlogic/vfd/aml.dtd b/drivers/amlogic/vfd/aml.dtd
+new file mode 100644
+index 0000000..8d9ef23
+--- /dev/null
++++ b/drivers/amlogic/vfd/aml.dtd
+@@ -0,0 +1,17 @@
++#if defined(CONFIG_VFD_ENABLE) || defined(CONFIG_VFD_ENABLE_MODULE)
++/// ******************************************************************
++// VFD
++//$$ MODULE="VFD"
++//$$ DEVICE="aml_broadcm_wifi"
++//$$ L2 PROP_STR = "status"
++//$$ L2 PROP_STR = "vfd_stb_pin"
++//$$ L2 PROP_STR = "vfd_clock_pin"
++//$$ L2 PROP_STR = "vfd_do_pin"
++//$$ L2 PROP_STR = "vfd_di_pin"
++    aml_vfd{
++		compatible = "amlogic,aml_vfd";
++		dev_name = "aml_vfd";
++		status = "okay";
++	};
++
++#endif
+diff --git a/drivers/amlogic/vfd/fd268_drive.h b/drivers/amlogic/vfd/fd268_drive.h
+new file mode 100644
+index 0000000..635c678
+--- /dev/null
++++ b/drivers/amlogic/vfd/fd268_drive.h
+@@ -0,0 +1,196 @@
++/* ***************************************************************************************** *
++ *	公司名称	:		福大海矽微电子有限公司（FUZHOU FUDA HISI MICROELECTRONICS CO.,LTD）		
++ *	创建人		：	袁文斌	                        								
++ *	文件名		：	FD628_DRIVE.C 														 
++ *	功能描述	：	FD628驱动的头文件，需要移植修改和调用的文件	   	 									
++ *	其他说明	：	串行数据的传输从低位开始，FD628在串行通信的时钟上升沿读取数据，下降沿输出数据						 					   
++ *	软件版本	：	V1B3（2012-10-17）  												
++****************************************************************************************** */
++#ifndef __FD628_Drive_H__
++#define __FD628_Drive_H__
++
++#if 1 //def  FD628_Drive_GLOBALS
++#define FD628_Drive_EXT 
++#else
++#define FD628_Drive_EXT  extern
++#endif
++//#include 	"../SYSTEM/includes.H"
++/* ************************************************************************************************************************************* 
++ *            a
++ *         -------
++ *        |       |
++ *      f |       | b
++ *         ---g---		
++ *        |       |	c
++ *      e |       |	
++ *         ---d---   dp
++ * *************************************************************************************************************************************** *
++ *码字		| 0		| 1		| 2		| 3		| 4		| 5		| 6		| 7		| 8		| 9		| A		| b		| C 	| d		| E		| F		|
++ *编码		|0x3F	|0x06	|0x5B	|0x4F	|0x66	|0x6D	|0x7D	|0x07	|0x7F	|0x6F	|0x77	|0x7c	|0x39	|0x5E	|0x79	|0x71	|
++ ************************************************************************************************************************************* */
++#define		NEGA_LED_NONE 0X00
++#define		NEGA_LED_0 0X3F
++#define		NEGA_LED_1 0x06
++#define		NEGA_LED_2 0x5B
++#define		NEGA_LED_3 0x4F
++#define		NEGA_LED_4 0x66
++#define		NEGA_LED_5 0X6d
++#define		NEGA_LED_6 0x7D
++#define		NEGA_LED_7 0x07
++#define		NEGA_LED_8 0x7f
++#define		NEGA_LED_9 0x6F
++
++#define		NEGA_LED_A 0X77 
++#define		NEGA_LED_b 0x7c 
++#define		NEGA_LED_C 0X39
++#define		NEGA_LED_c 0X58
++#define		NEGA_LED_d 0x5E
++#define		NEGA_LED_E 0X79
++#define		NEGA_LED_e 0X7b
++#define		NEGA_LED_F 0x71
++
++#define		NEGA_LED_I 0X60
++#define		NEGA_LED_L 0X38
++#define		NEGA_LED_r 0X72		
++#define		NEGA_LED_n 0X54
++#define		NEGA_LED_N 0X37
++#define		NEGA_LED_O 0X3F
++#define		NEGA_LED_P 0XF3
++#define		NEGA_LED_S 0X6d
++#define		NEGA_LED_y 0X6e
++#define		NEGA_LED__ 0x08
++/* **************************************API*********************************************** */
++/* *************************用户需要修改部分************************** */
++typedef unsigned char            BOOLEAN;       /* 布尔变量布尔变量*/
++typedef unsigned char  INT8U;         /* 无符号8位数*/
++typedef unsigned int  INT32U;         /* 无符号32位数*/
++/* **************按键名和对应码值定义********************** */
++#define FD628_KEY10 	0x00000200
++#define FD628_KEY9 		0x00000100
++#define FD628_KEY8 		0x00000080
++#define FD628_KEY7 		0x00000040
++#define FD628_KEY6  	0x00000020
++#define FD628_KEY5 		0x00000010
++#define FD628_KEY4  	0x00000008
++#define FD628_KEY3  	0x00000004
++#define FD628_KEY2  	0x00000002
++#define FD628_KEY1  	0x00000001
++#define FD628_KEY_NONE_CODE 0x00
++
++#define FD628_DELAY_KEY_SCAN             //延时10ms
++#define FD628_DISP_NORMAL	 (FD628_DISP_ON|FD628_Brightness_8 )
++/* *************************用户不需要修改部分************************** */
++/* ************** 控制FD628的宏 ********************** */
++#define FD628_4DIG_MODE 					FD628_Command(FD628_4DIG_CMD)						/*设置FD628工作在4位模式*/
++#define FD628_5DIG_MODE 					FD628_Command(FD628_5DIG_CMD)						/*设置FD628工作在5位模式*/
++#define FD628_6DIG_MODE 					FD628_Command(FD628_6DIG_CMD)						/*设置FD628工作在6位模式*/
++#define FD628_7DIG_MODE 					FD628_Command(FD628_7DIG_CMD)						/*设置FD628工作在7位模式*/
++#define FD628_Disp_Brightness_SET(Status)	FD628_Command(FD628_DISP_STATUE_WRCMD |(Status&0x0f))   	/*设置FD628的显示方式（亮度和显示开关）*/ 
++/* *************************************************************************************************************************************** *
++*	Status说明	| bit7	| bit6	| bit5	| bit4	| bit3			| bit2	| bit1	| bit0	| 		 Display_EN：显示使能位，1：打开显示；0：关闭显示
++*				| 0		| 0		| 0		| 0		| Display_EN	|	brightness[3:0]		|		 brightness：显示亮度控制位，000～111 分别代表着1（min）～8（max）级亮度
++* ************************************************************************************************************************************* */
++/* ************** Status可以使用下面的宏 （之间用或的关系） ************ */
++#define FD628_DISP_ON        					0x08		/*打开FD628显示*/
++#define FD628_DISP_OFF        				0x00		/*关闭FD628显示*/
++
++#define FD628_Brightness_1        				0x00		/*设置FD628显示亮度等级为1*/
++#define FD628_Brightness_2        				0x01		/*设置FD628显示亮度等级为2*/
++#define FD628_Brightness_3        				0x02		/*设置FD628显示亮度等级为3*/
++#define FD628_Brightness_4        				0x03		/*设置FD628显示亮度等级为4*/
++#define FD628_Brightness_5        				0x04		/*设置FD628显示亮度等级为5*/
++#define FD628_Brightness_6        				0x05		/*设置FD628显示亮度等级为6*/
++#define FD628_Brightness_7        				0x06		/*设置FD628显示亮度等级为7*/
++#define FD628_Brightness_8        				0x07		/*设置FD628显示亮度等级为8*/
++
++#define	FD628_WAIT_KEY_FREE		 		while(FD628_GetKey()!=FD628_KEY_NONE_CODE);		//等待按键释放
++#define	FD628_WAIT_KEY_PRESS			while(FD628_GetKey()==FD628_KEY_NONE_CODE);		//等待按键按下	 														 									//按键扫描时间 20ms
++/* ****************** 函数 ************************** */ 
++/****************************************************************
++ *	函数的名称:					    FD628_Command
++ *	描述:							发送控制命令
++ *	参数:		             		INT8U 控制命令
++ *	返回值:				    	    void
++****************************************************************/
++//FD628_Drive_EXT		void FD628_Command(INT8U);
++/***************************************************************
++ *	函数的名称:					    FD628_GetKey
++ *	描述:										读按键码值
++ *	参数:			             	void
++ *	返回值:					        INT8U 返回按键值 
++ **************************************************************************************************************************************
++返回的按键值编码  
++			| 0			| 0			| 0			| 0			| 0			| 0			| KS10	| KS9		| KS8		| KS7		| KS6		| KS5		| KS4		| KS3		| KS2		| KS1		|
++KEY1 	| bit15	| bit14	| bit13	| bit12	| bit11	| bit10	| bit9	| bit8	| bit7	| bit6	| bit5	| bit4	| bit3	| bit2	| bit1	| bit0	| 
++KEY2 	| bit31	| bit30	| bit29	| bit28	| bit27	| bit26	| bit25	| bit24	| bit23	| bit22	| bit21	| bit20	| bit19	| bit18	| bit17	| bit16	|
++***************************************************************************************************************************************/
++//FD628_Drive_EXT		INT32U FD628_GetKey();
++/****************************************************************
++ *	函数的名称:					    FD628_WrDisp_AddrINC
++ *	描述:										以地址递增模式发送显示内容
++ *	参数:		         				INT8U Addr发送显示内容的起始地址；具体地址和显示对应的表格见datasheet
++ *													INT8U DataLen 发送显示内容的位数
++ *	返回值:				        	BOOLEAN；如果地址超出将返回1；如果执行成功返回0。
++ *  使用方法：						先将数据写入FD628_DispData[]的相应位置，再调用FD628_WrDisp_AddrINC（）函数。
++****************************************************************/
++//FD628_Drive_EXT		BOOLEAN FD628_WrDisp_AddrINC(INT8U,INT8U)	;
++/****************************************************************
++ *	函数的名称:				FD628_WrDisp_AddrStatic
++ *	描述:							以地址固定模式发送显示内容 ;地址表看datasheet
++ *	参数:		          INT8U Addr发送显示内容的地址；
++ *										INT8U DIGData 写入显示内容
++ *	返回值:				    BOOLEAN；如果地址超出将返回1；如果执行成功返回0。
++****************************************************************/
++//FD628_Drive_EXT		BOOLEAN FD628_WrDisp_AddrStatic(INT8U,INT8U );
++/****************************************************************
++ *	函数的名称:				FD628_Init
++ *	描述:							FD628初始化，用户可以根据需要修改显示
++ *	参数:		          void
++ *	返回值:				    void
++****************************************************************/ 
++//FD628_Drive_EXT 	void FD628_Init(void);
++//FD628_Drive_EXT		INT8U	FD628_DispData[14]; /* 显示数据寄存器,调用FD628_WrDisp_AddrINC（）前，先将数据写入FD628_DispData[]的相应位置。*/  
++//FD628_Drive_EXT		code  INT8U NEGA_Table[0x10];	/* 共阴数码管码值编码数组，依次对应的显示：0,1,2,3,4,5,6,7,8,9,A,b,C,d,E,F  */ 
++/* ****************************************************************************************************** */
++/* ************************************* *Drive 模块* ********************************************** */
++#ifdef   FD628_Drive_GLOBALS //内部变量和函数
++/* ************************************ *用户需要修改部分* *************************************** */
++/* 定义通信接口的IO连接,与实际电路有关 */
++//  	  FD628_STB				;	  //FD628通信选通 
++//  	  FD628_CLK				;	  //FD628通信时钟 
++//  	  FD628_DIO				;	 	//FD628通信数据 
++/* 通信接口的IO操作，与平台IO操作有关 */
++#if 0
++#define		FD628_STB_SET			            					   	/* 将STB设置为高电平 */
++#define		FD628_STB_CLR			            					  /* 将STB设置为低电平 */
++#define		FD628_STB_D_OUT						 			    	    /* 设置STB为输出方向 */
++#define		FD628_CLK_SET				             					  /* 将CLK设置为高电平 */
++#define		FD628_CLK_CLR				               						/* 将CLK设置为低电平 */
++#define		FD628_CLK_D_OUT					  				  	   		/* 设置CLK为输出方向 */
++#define		FD628_DIO_SET					               						/* 将DIO设置为高电平 */
++#define		FD628_DIO_CLR				             						/* 将DIO设置为低电平 */
++#define		FD628_DIO_IN				            							/* 当DIO设为输入方向时，读取的电平高低 */
++#define		FD628_DIO_D_OUT  										        /* 设置DIO为输出方向 */
++#define		FD628_DIO_D_IN   										        /* 设置DIO为输入方向 */
++#define 	FD628_DELAY_1us											    	/* 延时时间 >1us*/
++#endif
++
++/* **************************************用户不需要修改*********************************************** */
++/* **************写入FD628延时部分（具体含义看Datasheet）********************** */
++#define 	FD628_DELAY_LOW		     	FD628_DELAY_1us                     		        /* 时钟低电平时间 >500ns*/
++#define		FD628_DELAY_HIGH     	 	FD628_DELAY_1us 	   										 				/* 时钟高电平时间 >500ns*/
++#define  	FD628_DELAY_BUF		 		 	FD628_DELAY_1us	                     				  	/* 通信结束到下一次通信开始的间隔 >1us*/
++#define  	FD628_DELAY_STB					FD628_DELAY_1us
++#endif	
++/* ***********************写入FD628操作命令***************************** */
++#define FD628_KEY_RDCMD        					0x42                //按键读取命令
++#define FD628_4DIG_CMD        				0x00		/*设置FD628工作在4位模式的命令*/
++#define FD628_5DIG_CMD        				0x01		/*设置FD628工作在5位模式的命令*/
++#define FD628_6DIG_CMD         				0x02	 	/*设置FD628工作在6位模式的命令*/
++#define FD628_7DIG_CMD         				0x03	 	/*设置FD628工作在7位模式的命令*/
++#define FD628_DIGADDR_WRCMD  						0xC0								//显示地址写入命令
++#define FD628_ADDR_INC_DIGWR_CMD       	0x40								//地址递增方式显示数据写入
++#define FD628_ADDR_STATIC_DIGWR_CMD    	0x44								//地址不递增方式显示数据写入	
++#define FD628_DISP_STATUE_WRCMD        	0x80								//显示亮度写入命令
++/* **************************************************************************************************************************** */
++#endif
+diff --git a/drivers/amlogic/vfd/sm1628.c b/drivers/amlogic/vfd/sm1628.c
+new file mode 100644
+index 0000000..7d4f43e
+--- /dev/null
++++ b/drivers/amlogic/vfd/sm1628.c
+@@ -0,0 +1,388 @@
++#include <linux/input/vfd.h>
++#include <linux/delay.h>
++#include <linux/kernel.h>
++#include "sm1628.h"
++
++#define VFD_DEBUG
++#ifdef VFD_DEBUG
++#define DBG_VFD(msg)                    msg
++#else
++#define DBG_VFD(msg)                    
++#endif
++
++void MDrv_FrontPnl_Init(void);
++int MDrv_TM1623_FP_Get_Key(void);
++
++int (*vfd_set_stb_pin_value)(int value);
++int (*vfd_set_clock_pin_value)(int value);
++int (*vfd_set_do_pin_value)(int value);
++int (*vfd_get_di_pin_value)(void);
++
++
++static int sm1628_init(struct vfd_platform_data *pvfd_platform_data)
++{
++		vfd_set_stb_pin_value = pvfd_platform_data->set_stb_pin_value;				
++		vfd_set_clock_pin_value = pvfd_platform_data->set_clock_pin_value;		
++		vfd_set_do_pin_value = pvfd_platform_data->set_do_pin_value;
++		vfd_get_di_pin_value = pvfd_platform_data->get_di_pin_value;
++		
++		MDrv_FrontPnl_Init();
++		
++		return 0;	
++}
++
++static int get_sm1628_key_value(void)
++{
++  return MDrv_TM1623_FP_Get_Key();
++}
++
++static int set_sm1628_led_value(char *display_code)
++{
++		int i,j = 0;
++		char data,display_char[8];
++		int dot = 0;
++		for(i = 0; i <= 8; i++)
++		{
++			data = display_code[i];
++			if(data == ':')	{
++				//display_char[i] = display_code[i+1];
++			  dot++;
++			}
++			else{				
++				display_char[j++] = display_code[i];
++				if(data == '\0')break;
++			}
++		}
++		//DBG_VFD(printk("function[%s] line %d display string: %s .\n", __FUNCTION__,__LINE__,display_char));
++/*
++		printk("function: %s line %d .\n", __FUNCTION__,__LINE__);
++		for(i=0;i<j;i++){
++		 printk("set led display char[%d] is: %c \n", i,display_char[i]);
++		 if(display_char[i] == '\0')	{
++		 		printk("end char is: char[%d] \n", i);
++		 		break;
++		 	}
++		}
++*/		
++		MDrv_FrontPnl_Update(display_char, dot);
++		return 0;
++}
++
++#ifdef CONFIG_VFD_SM1628
++int hardware_init(struct vfd_platform_data *pdev)
++{
++		int ret;					
++		ret = sm1628_init(pdev);					
++		return ret;	
++}
++
++int get_vfd_key_value(void)
++{
++		int key_value;
++		key_value = get_sm1628_key_value();
++		return key_value;
++}
++
++int set_vfd_led_value(char *display_code)
++{
++		int ret;		
++		ret = set_sm1628_led_value(display_code);		
++		return ret;
++}
++#endif
++
++//==============================================================================
++//----------------------------KEY Function--------------------------------------
++//==============================================================================
++//-------------------------------------------------------------------------------------------------
++/// TM16231 Write Data
++/// @return None
++//-------------------------------------------------------------------------------------------------
++void MDrv_TM1623_WriteData(U8 Value)
++{
++	U8 i, j;
++	udelay(10);
++
++	for (i = 0; i < 8; i++) {
++		if (Value & 0x01) {
++			PT6964_DIN_H;
++		}
++		else {
++			PT6964_DIN_L;
++		}
++		udelay(10);
++
++		PT6964_CLK_L;
++		udelay(50);
++		PT6964_CLK_H;
++		udelay(10);
++		Value >>= 1;
++		j++;
++	}
++}
++
++//-------------------------------------------------------------------------------------------------
++/// TM16231 Write Data
++/// @return None
++//-------------------------------------------------------------------------------------------------
++void MDrv_TM1623_Write_Adr_Data(U8 addr, U8 value)
++{
++	PT6964_STB_H;
++	udelay(10);
++	PT6964_STB_L;
++	MDrv_TM1623_WriteData(0x44);
++	PT6964_STB_H;
++	udelay(10);
++	PT6964_STB_L;
++	MDrv_TM1623_WriteData(addr|0xc0);
++	MDrv_TM1623_WriteData(value);
++	PT6964_STB_H;
++}
++
++//-------------------------------------------------------------------------------------------------
++/// TM16231 Clear Ram ( if you want to display new Char , you need Clear All)
++/// @return None
++//-------------------------------------------------------------------------------------------------
++void MDrv_TM1623_Clear6964RAM(void)
++{
++	U8  i;
++	PT6964_STB_H;
++	udelay(10);
++	PT6964_STB_L;
++	MDrv_TM1623_WriteData(0x40);			//Command 1, increment address
++	
++	PT6964_STB_H;
++	udelay(10);
++	PT6964_STB_L;
++	MDrv_TM1623_WriteData(0xc0);			//Command 2, RAM address = 0
++	for(i=0;i<=13;i++)			                     //22 bytes
++	{
++		MDrv_TM1623_WriteData(0x00);
++	}
++	PT6964_STB_H;
++}
++
++//-------------------------------------------------------------------------------------------------
++/// Initialize TM16231
++/// @return TRUE  - Success
++///         FALSE - Failure
++//-------------------------------------------------------------------------------------------------
++void MDrv_TM1623_Init(void)
++{
++	PT6964_STB_H;					//Initial state
++	PT6964_CLK_H;					//Intial state
++	PT6964_DIN_H;
++
++	udelay(500);			
++	PT6964_STB_L;
++	MDrv_TM1623_WriteData(FP_LED_MODE);
++	PT6964_STB_H;
++		
++	MDrv_TM1623_Clear6964RAM();
++	udelay(10);
++	PT6964_STB_L;
++	MDrv_TM1623_WriteData(0x8F);
++	PT6964_STB_H;
++}
++
++//-------------------------------------------------------------------------------------------------
++/// TM1623 Get Key
++/// @return None
++//-------------------------------------------------------------------------------------------------
++int MDrv_TM1623_FP_Get_Key(void)
++{
++	return (0);
++}
++
++//-------------------------------------------------------------------------------------------------
++/// TM1623 display on
++/// @return TRUE  - Success
++///         FALSE - Failure
++//-------------------------------------------------------------------------------------------------
++void MDrv_TM1623_Display_On(void)
++{
++	PT6964_STB_H;
++	udelay(10);	
++	PT6964_STB_L;
++	MDrv_TM1623_WriteData(0x8F);
++	PT6964_STB_H;
++}
++
++// Keypad uAPI
++int  uKeypad_WakeUp(void)
++{
++	bool bGetKey = FALSE;
++
++	//if( !_GPIO_PM2_Read() )
++	if (MDrv_TM1623_FP_Get_Key()) {
++		bGetKey = TRUE;
++	}
++	return bGetKey;
++}
++
++//==============================================================================
++//----------------------------LED Function--------------------------------------
++//==============================================================================
++//-------------------------------------------------------------------------------------------------
++/// Show boot
++/// @return None
++//-------------------------------------------------------------------------------------------------
++void MDrv_TM1623_ShowBoot(void)
++{
++	MDrv_TM1623_Write_Adr_Data(0x00, 0x10);
++	//   MDrv_TM1623_Write_Adr_Data(0x01, 0x00);
++	MDrv_TM1623_Write_Adr_Data(0x02, 0x10);
++	//    MDrv_TM1623_Write_Adr_Data(0x03, 0x00);
++	MDrv_TM1623_Write_Adr_Data(0x04, 0x10);
++	//   MDrv_TM1623_Write_Adr_Data(0x05, 0x00);
++	MDrv_TM1623_Write_Adr_Data(0x06, 0x10);
++	//   MDrv_TM1623_Write_Adr_Data(0x07, 0x00);
++}
++
++//-------------------------------------------------------------------------------------------------
++/// StandBy TM1623
++/// @return None
++//-------------------------------------------------------------------------------------------------
++void MDrv_TM1623_StandBy(void)
++{
++	MDrv_TM1623_Write_Adr_Data(0x00, 0x00);
++	MDrv_TM1623_Write_Adr_Data(0x01, 0x00);
++	MDrv_TM1623_Write_Adr_Data(0x02, 0x00);
++	MDrv_TM1623_Write_Adr_Data(0x03, 0x00);
++	MDrv_TM1623_Write_Adr_Data(0x04, 0x00);
++	MDrv_TM1623_Write_Adr_Data(0x05, 0x00);
++	MDrv_TM1623_Write_Adr_Data(0x06, 0x00);
++	MDrv_TM1623_Write_Adr_Data(0x07, 0x00);
++}
++
++//----------------------------------------------------
++// Function Name: Mdrv_6961_LED_DISP
++// Description:
++//		Update PT6961/PT6964/ET6201 LED display data RAM.
++// Parameters:
++//		U8_LedBit, LED number
++//		U8_LowByte, LowByte data in RAM     LSB~MSB : SEG1~ SEG8
++//		U8_HighByte, High Byte data in RAM	LSB~MSB : SEG9 ~ SEG12 + xxxx
++// 			LED bit sequence Can be address by the following Macro:
++//		LED_WORD1_ADDR /  LED_WORD2_ADDR /LED_WORD3_ADDR / LED_WORD4_ADDR
++//------------------------------------------------------------------------
++void MDrv_TM1623_LED_DISP(char U8_Ledbit, char U8_LowByte, char U8_HighByte)
++{
++	
++#if 1
++	switch (U8_Ledbit) {
++	case 0:
++		MDrv_TM1623_Write_Adr_Data(LED_WORD1_ADDR, U8_LowByte);
++		MDrv_TM1623_Write_Adr_Data(LED_WORD1_ADDR + 1, U8_HighByte);
++		break;
++	case 2:
++		MDrv_TM1623_Write_Adr_Data(LED_WORD2_ADDR, U8_LowByte);
++		MDrv_TM1623_Write_Adr_Data(LED_WORD2_ADDR + 1, U8_HighByte);
++		break;
++	case 4:
++		MDrv_TM1623_Write_Adr_Data(LED_WORD3_ADDR, U8_LowByte);
++		MDrv_TM1623_Write_Adr_Data(LED_WORD3_ADDR + 1, U8_HighByte);
++		break;
++	case 6:
++		MDrv_TM1623_Write_Adr_Data(LED_WORD4_ADDR, U8_LowByte);
++		MDrv_TM1623_Write_Adr_Data(LED_WORD4_ADDR + 1, U8_HighByte);
++		break;
++	
++	case 8:
++		MDrv_TM1623_Write_Adr_Data(LED_COLON_ADDR, U8_LowByte);
++		MDrv_TM1623_Write_Adr_Data(LED_COLON_ADDR + 1, U8_HighByte);
++		break;						
++	default:
++		break;
++	}
++#else  //test vfd
++
++	MDrv_TM1623_Write_Adr_Data(0x00, 0x08);
++	MDrv_TM1623_Write_Adr_Data(0x02, 0x08);
++	MDrv_TM1623_Write_Adr_Data(0x04, 0x08);
++	MDrv_TM1623_Write_Adr_Data(0x06, 0x08);
++	MDrv_TM1623_Write_Adr_Data(0x08, 0x08);
++
++#endif
++}
++
++//-------------------------------------------------------------
++// Function: MDrv_FP_LED_CharSet
++// Description :
++//			Set dedicated LED data, including dot
++// parameters:
++//			ledBit, led bit select
++//			U8LedChar: char data
++
++
++//-------------------------------------------------------------------
++bool MDrv_FP_LED_CharSet(unsigned char ledBit, char U8LEDChar)
++{
++	unsigned char i;
++	unsigned char low,high;
++
++	//DBG_VFD(printk("[%s]:line %d now display char : %c \n", __FUNCTION__,__LINE__,U8LEDChar));
++	for (i = 0; i < sizeof(_char2SegmentTable) / sizeof (Char2Segment); i++)
++	{
++		if (U8LEDChar == _char2SegmentTable[i].u8Char) {
++
++			low = (char)_char2SegmentTable[i].u8SegmentLowByte;
++			high = (char)_char2SegmentTable[i].u8SegmentHighByte;
++			
++			dig_value[bit2seg[ledBit]] = low ;
++			//MDrv_TM1623_LED_DISP(ledBit, low, high);
++			return 0;
++		}
++	}
++	return 1;
++}
++
++void MDrv_FrontPnl_Update(char *U8str, unsigned int colon)
++{
++	unsigned char i = 0;
++	unsigned char U8Data;
++	unsigned char display_char1[2];
++	int r=0;
++
++	for(i = 0; i < LED_BYTE_NUM; i++)	{
++		dig_value[i] = 0;
++	}
++		
++	for (i = 0; i < LED_NUM; i++) {
++		U8Data = U8str[i];
++
++		if (U8Data == '\0')	break;
++		if (MDrv_FP_LED_CharSet(i, U8Data))
++			DBG_VFD(printk("FP LED char not defined.\n"));
++	}
++#if 1
++	if ((U8str[4] != '\0')&&(U8str[5] != '\0'))
++	{
++		display_char1[0]= U8str[4];
++		display_char1[1]= U8str[5];
++		sscanf(display_char1, "%x", &r);
++
++		//DBG_VFD(printk("%x LED_NUM display string1212: %s .\n", r, display_char1));
++
++		dig_value[LED_COLON_ADDR] = r&0xff ;
++	}
++
++#endif
++				
++	for(i = 0; i < LED_BYTE_NUM; i++)	{
++		MDrv_TM1623_LED_DISP(i, dig_value[i], 0);
++	}
++
++	MDrv_TM1623_Display_On();
++
++}
++
++// Frontpanel API
++void MDrv_FrontPnl_Init(void)
++{
++	MDrv_TM1623_Init();
++	MDrv_FrontPnl_Update((char *)"boot", 0);
++
++}
++
++//------------- END OF FILE ------------------------
+diff --git a/drivers/amlogic/vfd/sm1628.h b/drivers/amlogic/vfd/sm1628.h
+new file mode 100644
+index 0000000..3d447aa
+--- /dev/null
++++ b/drivers/amlogic/vfd/sm1628.h
+@@ -0,0 +1,221 @@
++#ifndef SM_1628_H
++#define	SM_1628_H
++
++#if 0//
++
++#else  //B203_PANEL
++#define	COLON_ENABLE				0	// Maybe cause error of the display of 1bit LED
++#define	FP_LED_MODE					0x01
++// -------------- DIGITAL LED MACRO -----------------
++#define LED_NUM								4
++#define LED_BYTE_NUM					10
++#define FP_DOT1_DIG						8
++#define FP_DOT2_DIG						8
++#define FP_DOT_ENABLE					0
++#define FP_DOT_SEG_NUM				7
++#define LED_WORD1_ADDR				0
++#define	LED_WORD2_ADDR				2
++#define	LED_WORD3_ADDR				4
++#define	LED_WORD4_ADDR				6
++
++#define	LED_COLON_ENABLE_LOW		0xFF
++#define	LED_COLON_ENABLE_HIGH		0xFF
++#define	LED_COLON_DISABLE_LOW		0
++#define	LED_COLON_DISABLE_HIGH		0
++
++#define	LED_COLON_ADDR				8
++#define	LED_COLON_SEG				3
++#define	LED_PAUSE_SEG				0
++#define	LED_PLAY_SEG				2
++#define	LED_TIME_SEG				5
++#define	LED_NET_SEG					1
++#define	LED_WIFI_SEG				4
++#define	LED_USB_SEG					6
++
++#define FRONTPNL_START_TIME_MS		3	//((1000 / 50) / LED_NUM)
++#define FRONTPNL_PERIOD_TIME_MS		150
++
++
++typedef struct {
++    char u8Char;
++    char u8SegmentLowByte;
++    char u8SegmentHighByte;
++} Char2Segment;
++#define BIT_A		(1 << 1)	//            a
++#define BIT_B		(1 << 4)	//         -------
++#define BIT_C		(1 << 2)	//        |       |
++#define BIT_D		(1 << 0)	//    //f |       | b
++#define BIT_E		(1 << 3)	//         ---g---
++#define BIT_F		(1 << 5)	//        |       |	c
++#define BIT_G		(1 << 6)	//    //e |       |
++#define BIT_P		(1 << 7)	//         ---d---   p
++
++#endif
++#define LED_DATA_LIGHT		1	// open or close this when choose light mode
++#if (LED_DATA_LIGHT == 0)
++#define DATA_NOT	~	// data_reverse
++#else
++#define DATA_NOT		// no reverse
++#endif
++// 定义字符编码，此处无需随方案不同而改动，只需改动上面配置的BIT_A、BIT_B等
++#define DATA_0		(DATA_NOT (BIT_A | BIT_B | BIT_C | BIT_D | BIT_E | BIT_F))
++#define DATA_1		(DATA_NOT (BIT_B | BIT_C))
++#define DATA_2		(DATA_NOT (BIT_A | BIT_B | BIT_D | BIT_E | BIT_G))
++#define DATA_3		(DATA_NOT (BIT_A | BIT_B | BIT_C | BIT_D | BIT_G))
++#define DATA_4		(DATA_NOT (BIT_B | BIT_C | BIT_F | BIT_G))
++#define DATA_5		(DATA_NOT (BIT_A | BIT_C | BIT_D | BIT_F | BIT_G))
++#define DATA_6		(DATA_NOT (BIT_A | BIT_C | BIT_D | BIT_E | BIT_F | BIT_G))
++#define DATA_7		(DATA_NOT (BIT_A | BIT_B | BIT_C))
++#define DATA_8		(DATA_NOT (BIT_A | BIT_B | BIT_C | BIT_D | BIT_E | BIT_F | BIT_G))
++#define DATA_9		(DATA_NOT (BIT_A | BIT_B | BIT_C | BIT_D | BIT_F | BIT_G))
++#define DATA_A		(DATA_NOT (BIT_A | BIT_B | BIT_C | BIT_E | BIT_F | BIT_G))
++#define DATA_b		(DATA_NOT (BIT_C | BIT_D | BIT_E | BIT_F | BIT_G))
++#define DATA_C		(DATA_NOT (BIT_A | BIT_D | BIT_E | BIT_F))
++#define DATA_c		(DATA_NOT (BIT_D | BIT_E | BIT_G))
++#define DATA_d		(DATA_NOT (BIT_B | BIT_C | BIT_D | BIT_E | BIT_G))
++#define DATA_E		(DATA_NOT (BIT_A | BIT_D | BIT_E | BIT_F | BIT_G))
++#define DATA_F		(DATA_NOT (BIT_A | BIT_E | BIT_F | BIT_G))
++#define DATA_H		(DATA_NOT (BIT_B | BIT_C | BIT_E | BIT_F | BIT_G))
++#define DATA_h		(DATA_NOT (BIT_C | BIT_E | BIT_F | BIT_G))
++#define DATA_I		(DATA_NOT (BIT_E | BIT_F))
++#define DATA_i		(DATA_NOT (BIT_E))
++#define DATA_L		(DATA_NOT (BIT_D | BIT_E | BIT_F))
++#define DATA_N		(DATA_NOT (BIT_A | BIT_B | BIT_C | BIT_E | BIT_F))
++#define DATA_n		(DATA_NOT (BIT_C | BIT_E | BIT_G))
++#define DATA_O		(DATA_NOT (BIT_A | BIT_B | BIT_C | BIT_D | BIT_E | BIT_F))
++#define DATA_o		(DATA_NOT (BIT_C | BIT_D | BIT_E | BIT_G))
++#define DATA_P		(DATA_NOT (BIT_A | BIT_B | BIT_E | BIT_F | BIT_G))
++#define DATA_R		(DATA_NOT (BIT_D | BIT_E | BIT_G))
++#define DATA_r		(DATA_NOT (BIT_E | BIT_G))
++#define DATA_S		(DATA_NOT (BIT_A | BIT_C | BIT_D | BIT_F | BIT_G))
++#define DATA_s		(DATA_NOT (BIT_A | BIT_C | BIT_D | BIT_F | BIT_G))
++#define DATA_T		(DATA_NOT (BIT_D | BIT_E | BIT_F | BIT_G))
++#define DATA_t		(DATA_NOT (BIT_D | BIT_E | BIT_F | BIT_G))
++#define DATA_U		(DATA_NOT (BIT_B | BIT_C | BIT_D | BIT_E | BIT_F))
++#define DATA_u		(DATA_NOT (BIT_C | BIT_D | BIT_E))
++#define DATA_DP		(DATA_NOT (BIT_P))
++#define DATA_HYPH	(DATA_NOT (BIT_G))
++#define DATA_DARK	(DATA_NOT (0x00))
++static const char FP_LED_BOOT[] =
++{
++	0xF0,
++	0x00,
++	0xD0,
++	0x01,
++	0xD0,
++	0x01,
++	0xF0,
++	0x01
++};
++
++static const char FP_LED_STANDBY[]=
++{
++	0x00,
++	0x00,
++	0x00,
++	0x00,
++	0x00,
++	0x00,
++	0x00,
++	0x04
++};
++
++
++//  ---1---
++//    |     |
++//    2     3
++//    |     |
++//  ---4---
++//    |     |
++//    8     5
++//    |     |
++//  ---7---
++
++static const Char2Segment _char2SegmentTable[] =
++{
++#if 0
++#else	// for HENAG by scares
++	// char, low Byte, High Byte
++	{'0', DATA_0, 0x00},
++	{'1', DATA_1, 0x00},
++	{'2', DATA_2, 0x00},
++	{'3', DATA_3, 0x00},
++	{'4', DATA_4, 0x00},
++	{'5', DATA_5, 0x00},
++	{'6', DATA_6, 0x00},
++	{'7', DATA_7, 0x00},
++	{'8', DATA_8, 0x00},
++	{'9', DATA_9, 0x00},
++	{'A', DATA_A, 0x00},
++	{'B', DATA_b, 0x00},
++	{'b', DATA_b, 0x00},
++	{'C', DATA_C, 0x00},
++	{'c', DATA_c, 0x00},
++	{'D', DATA_d, 0x00},
++	{'d', DATA_d, 0x00},
++	{'E', DATA_E, 0x00},
++	{'F', DATA_F, 0x00},
++	{'H', DATA_H, 0x00},
++	{'h', DATA_h, 0x00},
++	{'I', DATA_I, 0x00},
++	{'i', DATA_i, 0x00},
++	{'L', DATA_L, 0x00},
++	{'n', DATA_n, 0x00},
++	{'N', DATA_N, 0x00},
++	{'O', DATA_O, 0x00},
++	{'o', DATA_o, 0x00},
++	{'P', DATA_P, 0x00},
++	{'R', DATA_R, 0x00},
++	{'r', DATA_r, 0x00},
++	{'S', DATA_S, 0x00},
++	{'T', DATA_T, 0x00},
++	{'t', DATA_t, 0x00},
++	{'U', DATA_U, 0x00},
++	{'u', DATA_u, 0x00},
++	{'V', DATA_u, 0x00},
++	{'-', DATA_HYPH, 0x00},
++	{' ', DATA_DARK, 0x00},
++	{'@', DATA_DARK, 0x00},
++#endif
++};
++
++#define PT6964_CLK_H			vfd_set_clock_pin_value(1)
++#define PT6964_CLK_L			vfd_set_clock_pin_value(0)
++
++#define PT6964_DIN_H			vfd_set_do_pin_value(1)
++#define PT6964_DIN_L			vfd_set_do_pin_value(0)
++
++#define PT6964_DOUT_GET			vfd_get_di_pin_value()
++
++#define	PT6964_STB_H			vfd_set_stb_pin_value(1)
++#define	PT6964_STB_L			vfd_set_stb_pin_value(0)
++
++//-------------------------------------------------------------------------------------------------
++// Defines
++//-------------------------------------------------------------------------------------------------
++#define PT6964_KEY_L0			1 //
++#define PT6964_KEY_L1			4 //
++#define PT6964_KEY_L2			5 //
++#define PT6964_KEY_L3			6 //
++#define PT6964_KEY_L4			7 //
++#define PT6964_KEY_L5			8 //
++
++typedef struct {
++	char keyMapData;
++	char keyMapLevel;
++} VFD_KEYMAP;
++
++typedef     unsigned char       U8;
++typedef     unsigned short      U16;
++
++enum {
++    FALSE = 0,
++    TRUE  = 1
++};
++
++#define DELAY(x) { mdelay(32 * x); }
++unsigned char dig_value[LED_BYTE_NUM];
++unsigned char bit2seg[LED_NUM] = {6, 4, 2, 0};
++
++#endif
++
+diff --git a/drivers/amlogic/vfd/vfd.c b/drivers/amlogic/vfd/vfd.c
+new file mode 100644
+index 0000000..5e7cfd8
+--- /dev/null
++++ b/drivers/amlogic/vfd/vfd.c
+@@ -0,0 +1,779 @@
++/*
++ * linux/drivers/input/vfd/vfd.c
++ *
++ * VFD Driver
++ *
++ * Copyright (C) 2011 Amlogic Corporation
++ *
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ * author :   tiejun_peng
++ */
++ /*
++ * !!caution: 
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/types.h>
++#include <linux/input.h>
++#include <linux/kernel.h>
++#include <linux/delay.h>
++#include <linux/platform_device.h>
++#include <linux/mutex.h>
++#include <linux/errno.h>
++#include <asm/irq.h>
++#include <asm/io.h>
++
++#include <linux/sched.h>    //wake_up_process()
++#include <linux/kthread.h>  //kthread_create(),kthread_run()
++#include <linux/err.h>      //IS_ERR(),PTR_ERR()
++
++#include <mach/am_regs.h>
++#include <mach/pinmux.h>
++#include <linux/major.h>
++#include <linux/slab.h>
++#include <asm/uaccess.h>
++#include <linux/input/vfd.h>
++#include <linux/amlogic/aml_gpio_consumer.h>
++
++#ifdef CONFIG_VFD_SM1628
++#include "vfd_comm.h"
++#endif
++#ifdef CONFIG_VFD_FD628SW
++#include "vfd_comm.h"
++#endif
++
++#ifndef DEBUG
++ #define DEBUG 0
++#endif
++
++#if 0
++static int thread_process(void* param)
++{
++  unsigned long t1 = 0, t2 = 0, n = 0;
++  while(n < 100)
++  {
++    set_current_state(TASK_UNINTERRUPTIBLE);
++
++    if(kthread_should_stop())
++    {
++      printk("kernel thread should stop;file:%s;line:%d\n", __FILE__, __LINE__);
++      break;
++		}
++		t1 = jiffies;
++    /*
++      sleep 1 second; HZ=100次/1s=100次/1000ms;物理意义就是:每秒钟产生100次时钟滴答/时钟中断;
++      而mdelay()函数参数的单位是ms;
++    */
++    SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));    //UP
++    mdelay(HZ);
++    CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));  //DOWN
++    t2 = jiffies;
++    printk("HZ = %d, t1 = %lu, t2 = %lu, t2 - t1 = %lu\n", HZ, t1, t2, (t2 - t1));
++    n++;
++  }
++  return 0; //这个返回值将通过do_exit(567)函数传递给函数kthread_stop(),然后,函数kthread_stop()再把这个返回值返回给调用者;
++};
++//STEP1:定义一个内核线程对象
++static struct task_struct* my_thread = NULL;
++#endif
++
++
++#define AML_VFD_DRIVER_NAME	"aml_vfd"
++//struct vfd_platform_data *pdata = NULL;
++
++             
++#if defined(CONFIG_VFD_ENABLE) || defined(CONFIG_VFD_ENABLE_MODULE)
++
++
++static struct vfd_key vfd_key[] = {
++	{KEY_UP,				"up",			17},
++	{KEY_DOWN,			"down",		20},
++	{KEY_RIGHT,			"right",	21},
++	{KEY_TAB,				"back",		25},
++	{KEY_LEFT,			"left",		26},
++	{KEY_RIGHTCTRL,	"ok",			18},
++};
++
++static int vfd_stb_pin_set_value(int value)
++{		
++//			return 0;
++
++#if 0
++	unsigned int a;
++
++  a = amlogic_gpio_name_map_num("GPIOAO_10");
++  amlogic_gpio_request(a, "aml_vfd");
++  
++          msleep(1);
++
++	if (value>0)
++		    amlogic_gpio_direction_output(a, 1, "aml_vfd");
++//    amlogic_set_value(a, 1, "aml_vfd");
++	else 
++		    amlogic_gpio_direction_output(a, 0, "aml_vfd");
++//    amlogic_set_value(a, 0, "aml_vfd");
++    		printk("vfd_stb_pin_set_value %d \n", value);
++//        SET_AOBUS_REG_MASK(P_AO_GPIO_O_EN_N, (1 << 27));
++
++//	if(pdata->vfd_stb_pin > 0)
++//		amlogic_gpio_direction_output(pdata->vfd_stb_pin, i, AML_VFD_DRIVER_NAME); 	  
++//	else
++//		printk("%s vfd_stb_pin pdata is not inited!\n",__FUNCTION__);
++#endif
++#if 1
++//	udelay(10);
++
++	if (value>0)
++		SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 26));
++	else 
++  	CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 26));
++  	
++//  	printk("vfd_stb_pin_set_value %d \n", value);
++#endif
++
++		return 0;
++}
++
++static int vfd_clock_pin_set_value(int value)
++{
++//			return 0;
++
++#if 0
++	unsigned int a;
++
++  a = amlogic_gpio_name_map_num("GPIOAO_9");
++  amlogic_gpio_request(a, "aml_vfd");
++          msleep(1);
++
++	if (value>0)
++		    amlogic_gpio_direction_output(a, 1, "aml_vfd");
++	else 
++		    amlogic_gpio_direction_output(a, 0, "aml_vfd");
++		    
++//  	printk("vfd_clock_pin_set_value %d \n", value);
++		    
++#endif
++#if 1
++//	udelay(10);
++
++	if (value>0)
++		SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 25));
++	else 
++  	CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 25));
++  	
++//  	printk("vfd_clock_pin_set_value %d \n", value);
++#endif	
++		return 0;
++}
++
++static int vfd_do_pin_set_value(int value)
++{
++//			return 0;
++
++#if 0
++	unsigned int a;
++
++  a = amlogic_gpio_name_map_num("GPIOAO_11");
++  amlogic_gpio_request(a, "aml_vfd");
++          msleep(1);
++
++	if (value>0)
++		    amlogic_gpio_direction_output(a, 1, "aml_vfd");
++	else 
++		    amlogic_gpio_direction_output(a, 0, "aml_vfd");
++//		      	printk("vfd_do_pin_set_value %d \n", value);
++
++#endif
++
++#if 1
++//	udelay(10);
++
++	if (value>0)
++		SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++	else 
++  	CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++//  			      	printk("vfd_do_pin_set_value %d \n", value);
++
++#endif			    
++		return 0;	
++}
++
++static int vfd_di_pin_get_value(void)
++{		
++//	unsigned int a;
++return 1;
++
++//	unsigned int a,b;
++//  a = amlogic_gpio_name_map_num("GPIOAO_11");
++//  b = amlogic_get_value(a, "aml_vfd");
++    
++//		return b;	
++//		return (gpio_in_get(PAD_GPIOX_30)>0)?1:0;;	 		
++}
++
++static struct vfd_platform_data vfd_pdata = {
++		.key = &vfd_key[0],
++		.key_num = ARRAY_SIZE(vfd_key),
++		.set_stb_pin_value = vfd_stb_pin_set_value,
++		.set_clock_pin_value = vfd_clock_pin_set_value,
++		.set_do_pin_value = vfd_do_pin_set_value,
++		.get_di_pin_value = vfd_di_pin_get_value,
++};
++
++static const struct of_device_id vfd_match[]={
++	{ .compatible = "amlogic,aml_vfd", 
++//		.data		= (void *)&vfd_pdata,
++		},
++	{},
++};  
++//static struct platform_device vfd_device = {
++//		.name = "aml_vfd",
++//		.id = 0,
++//		.num_resources = 0,
++//		.resource = NULL,
++//		.dev = {
++//			.platform_data = &vfd_pdata,
++//		}
++//};
++#endif
++
++struct vfd {
++		struct input_dev *input;
++		struct timer_list timer;		
++	  char config_name[20];
++	  struct class *config_class;
++	  struct device *config_dev;
++	  int config_major;	
++		unsigned int cur_keycode;			
++		unsigned int debug_enable;
++		char set_led_value[8];
++		char cur_led_value[8];
++		struct vfd_key *key;
++		int key_num;
++};
++
++static int cur_led_value_init=0;
++
++type_vfd_printk vfd_input_dbg;
++
++static struct vfd *gp_vfd=NULL;
++
++//static DEFINE_MUTEX(led_set_mutex);
++
++int vfd_printk(const char *fmt, ...)
++{
++    va_list args;
++    int r;
++
++    if (gp_vfd->debug_enable==0)  return 0;
++    va_start(args, fmt);
++    r = vprintk(fmt, args);
++    va_end(args);
++    return r;
++}
++
++/*****************************************************************
++**
++** func : hardware init
++**       in this function will do pin configuration and and initialize for hardware
++**
++********************************************************************/
++
++static inline void set_led_string(char* string)
++{
++  sprintf(gp_vfd->set_led_value, "%.7s", string);
++  gp_vfd->set_led_value[7] = '\0';		
++}
++
++static ssize_t vfd_key_get(struct device* dev, struct device_attribute* attr, char* buf)
++{
++  return sprintf(buf, "%u\n", gp_vfd->cur_keycode);
++}
++
++static char strBuf[8];
++static ssize_t vfd_led_show(struct device* dev, struct device_attribute* attr, char* buf)
++{
++  ssize_t ret = 0;
++  
++  ret = sprintf(buf, "%s", strBuf);
++  
++  #if DEBUG
++  vfd_printk("%s: vfd led display: %s\n", __FUNCTION__, buf);
++  #endif
++  return ret;
++}
++
++//control var by sysfs
++static ssize_t vfd_led_store(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
++{
++  ssize_t ret = 0;
++  
++  memset(strBuf, 0, sizeof(strBuf));
++  ret = snprintf(strBuf, sizeof(strBuf), "%s", buf);
++  
++  #if DEBUG
++  vfd_printk("%s: vfd led display: %s\n",__FUNCTION__, buf);
++  #endif
++  
++  //mutex_lock(&led_set_mutex);
++  //set_led_string(strBuf);
++  sprintf(gp_vfd->set_led_value, "%.7s", buf);
++  gp_vfd->set_led_value[7] = '\0';
++  //mutex_unlock(&led_set_mutex);
++  return ret;
++}
++
++static DEVICE_ATTR(key, S_IRUGO | S_IWUSR, vfd_key_get, NULL);
++static DEVICE_ATTR(led, S_IRUGO | S_IWUSR, vfd_led_show, vfd_led_store);
++
++/*******************************************************************
++**stand code
++********************************************************************/
++
++static int vfd_search_key(struct vfd *vfd)
++{
++		struct vfd_key *key = vfd->key;
++		int value,j;
++		
++				return 0;
++
++		value = get_vfd_key_value();		
++		if (value <= 0) {
++			return 0;
++		}
++		vfd_printk("function<%s> line <%d> get VFD key value : [%d]  \n",__FUNCTION__,__LINE__,value);
++	 	for (j=0; j<vfd->key_num; j++) {
++			if ((value == key->value)) {
++				return key->code;
++			}
++			key++;
++		}
++		
++	return 0;
++}
++
++static void vfd_work(struct vfd *vfd)
++{
++		int code = vfd_search_key(vfd);
++	
++		if (vfd->cur_keycode) {
++			if (!code) {
++				vfd_printk("vfd report key code: [%d] released.\n", vfd->cur_keycode);
++				input_report_key(vfd->input, vfd->cur_keycode, 0);
++				vfd->cur_keycode = 0;	
++			}
++			else {
++			// detect another key while pressed
++			}	
++		}
++		else {
++			if (code) {
++				vfd->cur_keycode = code;
++				vfd_printk("vfd report key code: [%d] pressed.\n", vfd->cur_keycode);
++				input_report_key(vfd->input, vfd->cur_keycode, 1);
++			}
++		}
++}
++
++void vfd_timer_sr(unsigned long data)
++{
++  struct vfd* vfd_data = (struct vfd*)data;
++  
++  vfd_work(vfd_data);
++  if((strcmp(gp_vfd->cur_led_value,gp_vfd->set_led_value)) || (cur_led_value_init==1))
++  {
++    cur_led_value_init = 0;
++    
++    #if DEBUG
++    vfd_printk("%s: line %d current LED value: %s, set LED value: %s\n", __FUNCTION__, __LINE__, gp_vfd->cur_led_value, gp_vfd->set_led_value);
++    #endif
++    
++    strcpy(gp_vfd->cur_led_value,gp_vfd->set_led_value);//vfd->cur_ledcode = vfd->set_ledcode;
++    set_vfd_led_value(gp_vfd->cur_led_value);
++  }
++  mod_timer(&vfd_data->timer,jiffies+msecs_to_jiffies(200));
++}
++
++static int
++vfd_config_open(struct inode *inode, struct file *file)
++{
++    file->private_data = gp_vfd;
++    return 0;
++}
++
++static int
++vfd_config_release(struct inode *inode, struct file *file)
++{
++    file->private_data=NULL;
++    return 0;
++}
++
++static const struct file_operations vfd_fops = {
++    .owner      = THIS_MODULE,
++    .open       = vfd_config_open,
++    //.ioctl      = NULL,
++    .release    = vfd_config_release,
++};
++
++static int  register_vfd_dev(struct vfd  *vfd)
++{
++    int ret=0;
++    strcpy(vfd->config_name,"aml_vfd");
++    ret=register_chrdev(0,vfd->config_name,&vfd_fops);
++    if(ret <=0)
++    {
++        printk("register char dev vfd error\r\n");
++        return  ret ;
++    }
++    vfd->config_major=ret;
++    printk("vfd config major:%d\r\n",ret);
++    vfd->config_class=class_create(THIS_MODULE,vfd->config_name);
++    vfd->config_dev=device_create(vfd->config_class,NULL,MKDEV(vfd->config_major,0),NULL,vfd->config_name);
++    return ret;
++}
++
++static void aml_vfd_pinmux_init(void)
++{
++#if 1
++//    unsigned int d=0;//,e=0,f=0;
++
++    printk("vfd_pinmux_init2\n");
++
++//    aml_clr_reg32_mask(P_AO_SECURE_REG1, ((1<<8) | (1<<1)));
++
++		aml_clr_reg32_mask(P_AO_RTI_PIN_MUX_REG,((1<<27)|(1<<28)|(1<<29)));//set mode GPIOAO
++
++//CLR GPIOAO_11
++//        CLEAR_AOBUS_REG_MASK(P_AO_RTI_PIN_MUX_REG,1<<27);
++        CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 11));
++        CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++//CLR GPIOAO_10
++//        CLEAR_AOBUS_REG_MASK(P_AO_RTI_PIN_MUX_REG,1<<28);
++        CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 10));
++        SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 26));
++//CLR GPIOAO_9
++//        CLEAR_AOBUS_REG_MASK(P_AO_RTI_PIN_MUX_REG,1<<29);
++        CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 9));
++        SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 25));
++//        	for(d=1; d < 20000; d++);
++        SET_AOBUS_REG_MASK(AO_RTI_PULL_UP_REG, (1 << 11));
++        SET_AOBUS_REG_MASK(AO_RTI_PULL_UP_REG, (1 << 27));
++
++#endif
++
++#if 0
++          msleep(100);
++        CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++            	  printk("vfd_pinmux_init: %d\n", d);
++
++    	    msleep(100);
++        SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++        
++          msleep(100);
++        CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++            	  printk("vfd_pinmux_init: %d\n", d);
++
++    	    msleep(100);
++        SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++        
++                  msleep(100);
++        CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++            	  printk("vfd_pinmux_init: %d\n", d);
++
++    	    msleep(100);
++        SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++        
++          msleep(100);
++        CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++            	  printk("vfd_pinmux_init: %d\n", d);
++
++    	    msleep(100);
++        SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++          msleep(100);
++//        CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++//            	  printk("vfd_pinmux_initnnn\n");
++  #endif          
++
++#if 0
++    CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++    d = 0;
++    while(d < 10)
++    { 
++//    	   mdelay(HZ);
++          msleep(1);
++        CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++ //       SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 26));
++//        SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 25));
++
++         	//mdelay(HZ);
++    	          msleep(1);
++
++        SET_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 27));
++ //       CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 26));
++ //       CLEAR_AOBUS_REG_MASK(AO_GPIO_O_EN_N, (1 << 25));
++    	    d++;
++    	  printk("vfd_pinmux_initXXXXXX: %d\n", d);
++    }
++#endif
++		printk("vfd_pinmux_init11111 \n");
++}
++
++#if 0
++static void aml_vfd_pinmux_deinit(void)
++{
++    unsigned int a, b, c;
++    printk("vfd_pinmux_deinit1\n");
++
++    a = amlogic_gpio_name_map_num("GPIOAO_9");
++    b = amlogic_gpio_name_map_num("GPIOAO_10");
++    c = amlogic_gpio_name_map_num("GPIOAO_11");
++    
++    amlogic_gpio_free(a, "aml_vfd");
++    amlogic_gpio_free(b, "aml_vfd");
++    amlogic_gpio_free(c, "aml_vfd");
++}
++#endif
++
++void aml_vfd_cur_led_value_init(void)
++{
++	cur_led_value_init = 1;
++//		strcpy(gp_vfd->set_led_value, "");
++//		strcpy(gp_vfd->cur_led_value, "");
++}
++
++static int vfd_probe(struct platform_device *pdev)
++{
++    struct vfd *vfd;
++    struct input_dev *input_dev;
++    int ret,i;
++    struct vfd_key *temp_key;
++    struct vfd_platform_data *pdata = &vfd_pdata;
++
++    if (!pdata) {
++        dev_err(&pdev->dev, "platform data is required!\n");
++        return -EINVAL;
++    }
++
++   	if (!pdev->dev.of_node) {
++			printk("aml_remote: pdev->dev.of_node == NULL!\n");
++			return -1;
++	}
++    if(hardware_init(pdata)) {
++    		dev_err(&pdev->dev, "vfd hardware initial failed!\n");  
++    		return -EINVAL;
++    }
++
++    vfd = kzalloc(sizeof(struct vfd), GFP_KERNEL);
++    input_dev = input_allocate_device();
++    if (!vfd || !input_dev)
++        goto err1;
++
++    gp_vfd = vfd;
++    vfd->debug_enable = 1;
++    vfd_input_dbg = vfd_printk;
++		platform_set_drvdata(pdev, vfd);
++		
++		vfd->input = input_dev;
++		vfd->cur_keycode = 0;
++		strcpy(vfd->set_led_value, "boot");
++		strcpy(vfd->cur_led_value, "");
++		setup_timer(&vfd->timer, vfd_timer_sr, (unsigned long)vfd) ;
++		mod_timer(&vfd->timer, jiffies+msecs_to_jiffies(100));
++
++		/* setup input device */
++    set_bit(EV_KEY, input_dev->evbit);
++    set_bit(EV_REP, input_dev->evbit);
++
++    vfd->key = pdata->key;
++    vfd->key_num = pdata->key_num;
++    temp_key = pdata->key;
++		for (i=0; i<vfd->key_num; i++) {
++				set_bit(temp_key->code, input_dev->keybit);
++				printk(KERN_INFO "%s vfd key(%d) registed.\n", temp_key->name, temp_key->code);
++        temp_key++;
++    }
++
++		ret = device_create_file(&pdev->dev, &dev_attr_key);
++		if (ret < 0)
++        goto err1;
++    ret = device_create_file(&pdev->dev, &dev_attr_led);  
++		if (ret < 0)
++        goto err1;
++    vfd_input_dbg("device_create_file completed \r\n");   
++      
++    input_dev->name = "vfd_keypad";
++    input_dev->phys = "vfd_keypad/input0";
++    input_dev->dev.parent = &pdev->dev;
++
++    input_dev->id.bustype = BUS_ISA;
++    input_dev->id.vendor = 0x0001;
++    input_dev->id.product = 0x0001;
++    input_dev->id.version = 0x0100;
++
++    input_dev->rep[REP_DELAY]=0xffffffff;
++    input_dev->rep[REP_PERIOD]=0xffffffff;
++
++    input_dev->keycodesize = sizeof(unsigned short);
++    input_dev->keycodemax = 0x1ff;
++
++    ret = input_register_device(vfd->input);
++    if (ret < 0) {
++        printk(KERN_ERR "Unable to register vfdkeypad input device\n");
++        goto err2;
++    }
++    vfd_input_dbg("input_register_device completed \r\n");    
++
++    register_vfd_dev(gp_vfd);
++    return 0;
++/*    
++err3:
++    input_unregister_device(vfd->input);
++    input_dev = NULL;
++*/    
++err2:
++    device_remove_file(&pdev->dev, &dev_attr_key);
++    device_remove_file(&pdev->dev, &dev_attr_led);
++err1:
++    kfree(vfd);
++    input_free_device(input_dev);
++
++    return -EINVAL;
++}
++
++static int vfd_remove(struct platform_device *pdev)
++{
++	  struct vfd *vfd = platform_get_drvdata(pdev);
++	   /* unregister everything */
++    input_unregister_device(vfd->input);
++		device_remove_file(&pdev->dev, &dev_attr_key);
++    device_remove_file(&pdev->dev, &dev_attr_led);
++    
++		input_free_device(vfd->input);
++    unregister_chrdev(vfd->config_major,vfd->config_name);
++    if(vfd->config_class)
++    {
++        if(vfd->config_dev)
++        device_destroy(vfd->config_class,MKDEV(vfd->config_major,0));
++        class_destroy(vfd->config_class);
++    } 
++//    aml_vfd_pinmux_deinit();      
++    kfree(vfd);
++    gp_vfd = NULL ;
++    return 0;	
++	
++}
++
++
++#if 0
++static int vfd_suspend(struct platform_device* dev, pm_message_t state)
++{	
++	int i;
++	
++	 printk("vfd_suspend, set sleep 1 \n");
++
++  MDrv_FrontPnl_Update((char *)"@OFF", 0);
++  for (i=0;i<1000;i++)
++	udelay(1000);
++	MDrv_FrontPnl_Update((char *)"@", 0);
++	
++	return 0;
++}
++
++static int vfd_resume(struct platform_device* dev)
++{
++	 printk("vfd_resume, set sleep 1 \n");
++	aml_vfd_cur_led_value_init();
++	return 0;
++}
++#endif
++
++#if 0
++
++static struct platform_driver vfd_driver = {
++    .probe      = vfd_probe,
++    .remove     = vfd_remove,
++    .suspend    = vfd_suspend,
++    .resume     = vfd_resume,
++    .driver     = {
++        .name   = "aml_vfd",
++        .of_match_table = vfd_match
++    },
++};
++
++#endif
++
++#if 1
++static struct platform_driver vfd_driver = {
++    .probe      = vfd_probe,
++    .remove     = vfd_remove,
++    .suspend    = NULL,
++    .resume     = NULL,
++    .driver     = {
++        .name   = "aml_vfd",
++        .of_match_table = vfd_match
++    },
++};
++#endif
++
++static int __init vfd_init(void)
++{
++	  int ret = 0;
++    printk(KERN_INFO "VFD Driver\n");
++    aml_vfd_pinmux_init();
++ 
++#if 0
++  my_thread = kthread_create(thread_process, NULL, "my_thread");
++  if(IS_ERR(my_thread))
++  {
++    ret = PTR_ERR(my_thread);
++    my_thread = NULL;
++    printk(KERN_ERR "unable to start kernel thread:%d\n", ret);
++    return ret;
++  }
++  //STEP3:唤醒并开始运行刚刚创建的内核线程my_thread;
++  wake_up_process(my_thread);
++  printk("kernel thread start;file:%s;line:%d\n", __FILE__, __LINE__);
++#endif
++    ret = platform_driver_register(&vfd_driver);
++    return ret;
++}
++
++static void __exit vfd_exit(void)
++{
++#if 0
++	int ret = -1;
++	if(my_thread)
++  {
++    ret = kthread_stop(my_thread);  //函数kthread_stop()会把线程函数int thread_process(void* param)的返回值返回给调用者;
++    my_thread = NULL;               //线程停止之后,要把线程句柄置空;
++  }
++  printk("kernel thread stop,exit code is %d;file:%s;line:%d\n",ret, __FILE__, __LINE__);
++#endif
++    printk(KERN_INFO "VFD exit \n");
++    platform_driver_unregister(&vfd_driver);
++}
++
++//fs_initcall_sync(vfd_init);
++module_init(vfd_init);
++module_exit(vfd_exit);
++
++MODULE_AUTHOR("AMLOGIC");
++MODULE_DESCRIPTION("Amlogic VFD Driver");
++MODULE_LICENSE("GPL");
++MODULE_DEVICE_TABLE(of, vfd_match);
+diff --git a/drivers/amlogic/vfd/vfd_comm.h b/drivers/amlogic/vfd/vfd_comm.h
+new file mode 100644
+index 0000000..6b891a3
+--- /dev/null
++++ b/drivers/amlogic/vfd/vfd_comm.h
+@@ -0,0 +1,5 @@
++typedef int (*type_vfd_printk)(const char *fmt, ...);
++
++int hardware_init(struct vfd_platform_data *pdev);
++int get_vfd_key_value(void);
++int set_vfd_led_value(char *display_code);
+\ No newline at end of file
+diff --git a/include/linux/input/vfd.h b/include/linux/input/vfd.h
+new file mode 100644
+index 0000000..79c9460
+--- /dev/null
++++ b/include/linux/input/vfd.h
+@@ -0,0 +1,24 @@
++#ifndef __LINUX_VFD_H
++#define __LINUX_VFD_H
++
++struct vfd_key{
++	int code;	/* input key code */
++	unsigned char *name;
++	int value;	/* voltage/3.3v * 1023 */
++};
++
++void MDrv_FrontPnl_Update(char *U8str, unsigned int colon);
++void aml_vfd_cur_led_value_init(void);
++
++struct vfd_platform_data{
++	int (*set_stb_pin_value)(int value);		
++	int (*set_clock_pin_value)(int value);	
++	int (*set_do_pin_value)(int value);
++	int (*get_di_pin_value)(void);
++	
++	struct vfd_key *key;
++	int key_num;
++};
++
++#endif
++
+-- 
+1.9.1
+
