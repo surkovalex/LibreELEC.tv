@@ -1,0 +1,124 @@
+From 8e965398c32669dfa9aa37c22b179e6015151fca Mon Sep 17 00:00:00 2001
+From: Alex Deryskyba <alex@codesnake.com>
+Date: Wed, 1 Jul 2015 23:37:11 +0200
+Subject: [PATCH] Add support for 4k resolutions
+
+---
+ xbmc/utils/AMLUtils.cpp                     | 16 ++++++++--------
+ xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp | 23 +++++++++++++++++++----
+ xbmc/windowing/egl/EGLNativeTypeAmlogic.h   |  2 ++
+ 3 files changed, 29 insertions(+), 12 deletions(-)
+
+diff --git a/xbmc/utils/AMLUtils.cpp b/xbmc/utils/AMLUtils.cpp
+index 0660ee4..96a26f7 100644
+--- a/xbmc/utils/AMLUtils.cpp
++++ b/xbmc/utils/AMLUtils.cpp
+@@ -453,8 +453,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
+   }
+   else if (StringUtils::EqualsNoCase(fromMode, "4k2ksmpte") || StringUtils::EqualsNoCase(fromMode, "smpte24hz"))
+   {
+-    res->iWidth = 1920;
+-    res->iHeight= 1080;
++    res->iWidth = 4096;
++    res->iHeight= 2160;
+     res->iScreenWidth = 4096;
+     res->iScreenHeight= 2160;
+     res->fRefreshRate = 24;
+@@ -471,8 +471,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
+   }
+   else if (StringUtils::EqualsNoCase(fromMode, "4k2k24hz") || StringUtils::EqualsNoCase(fromMode, "2160p24hz"))
+   {
+-    res->iWidth = 1920;
+-    res->iHeight= 1080;
++    res->iWidth = 3840;
++    res->iHeight= 2160;
+     res->iScreenWidth = 3840;
+     res->iScreenHeight= 2160;
+     res->fRefreshRate = 24;
+@@ -480,8 +480,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
+   }
+   else if (StringUtils::EqualsNoCase(fromMode, "4k2k25hz") || StringUtils::EqualsNoCase(fromMode, "2160p25hz"))
+   {
+-    res->iWidth = 1920;
+-    res->iHeight= 1080;
++    res->iWidth = 3840;
++    res->iHeight= 2160;
+     res->iScreenWidth = 3840;
+     res->iScreenHeight= 2160;
+     res->fRefreshRate = 25;
+@@ -498,8 +498,8 @@ bool aml_mode_to_resolution(const char *mode, RESOLUTION_INFO *res)
+   }
+   else if (StringUtils::EqualsNoCase(fromMode, "4k2k30hz") || StringUtils::EqualsNoCase(fromMode, "2160p30hz"))
+   {
+-    res->iWidth = 1920;
+-    res->iHeight= 1080;
++    res->iWidth = 3840;
++    res->iHeight= 2160;
+     res->iScreenWidth = 3840;
+     res->iScreenHeight= 2160;
+     res->fRefreshRate = 30;
+diff --git a/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp b/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
+index 4760c78..65a5175 100644
+--- a/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
++++ b/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
+@@ -64,7 +64,22 @@ void CEGLNativeTypeAmlogic::Initialize()
+ {
+   aml_permissions();
+   DisableFreeScale();
++  GetMaxResolution(m_maxResolution);
+ }
++
++void CEGLNativeTypeAmlogic::GetMaxResolution(RESOLUTION_INFO &maxResolution)
++{
++  std::vector<RESOLUTION_INFO> resolutions;
++  ProbeResolutions(resolutions);
++
++  maxResolution = {0};
++  for (size_t i = 0; i < resolutions.size(); i++)
++  {
++    if (resolutions[i].iScreenWidth > maxResolution.iScreenWidth || resolutions[i].iScreenHeight > maxResolution.iScreenHeight)
++      maxResolution = resolutions[i];
++  }
++}
++
+ void CEGLNativeTypeAmlogic::Destroy()
+ {
+   return;
+@@ -83,8 +98,8 @@ bool CEGLNativeTypeAmlogic::CreateNativeWindow()
+   if (!nativeWindow)
+     return false;
+ 
+-  nativeWindow->width = 1920;
+-  nativeWindow->height = 1080;
++  nativeWindow->width = m_maxResolution.iScreenWidth;
++  nativeWindow->height = m_maxResolution.iScreenHeight;
+   m_nativeWindow = nativeWindow;
+ 
+   SetFramebufferResolution(nativeWindow->width, nativeWindow->height);
+@@ -247,8 +262,8 @@ void CEGLNativeTypeAmlogic::SetFramebufferResolution(int width, int height) cons
+     {
+       vinfo.xres = width;
+       vinfo.yres = height;
+-      vinfo.xres_virtual = 1920;
+-      vinfo.yres_virtual = 2160;
++      vinfo.xres_virtual = m_maxResolution.iScreenWidth;
++      vinfo.yres_virtual = m_maxResolution.iScreenHeight * 2;
+       vinfo.bits_per_pixel = 32;
+       vinfo.activate = FB_ACTIVATE_ALL;
+       ioctl(fd0, FBIOPUT_VSCREENINFO, &vinfo);
+diff --git a/xbmc/windowing/egl/EGLNativeTypeAmlogic.h b/xbmc/windowing/egl/EGLNativeTypeAmlogic.h
+index cfb33ca..cf60134 100644
+--- a/xbmc/windowing/egl/EGLNativeTypeAmlogic.h
++++ b/xbmc/windowing/egl/EGLNativeTypeAmlogic.h
+@@ -58,6 +58,8 @@ protected:
+ private:
+   void SetFramebufferResolution(const RESOLUTION_INFO &res) const;
+   void SetFramebufferResolution(int width, int height) const;
++  void GetMaxResolution(RESOLUTION_INFO &maxResolution);
+ 
+   std::string m_framebuffer_name;
++  RESOLUTION_INFO m_maxResolution;
+ };
+-- 
+1.9.1
+

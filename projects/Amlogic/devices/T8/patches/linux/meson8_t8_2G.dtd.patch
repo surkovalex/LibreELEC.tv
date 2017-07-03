@@ -1,0 +1,31 @@
+--- linux-83ba060.orig/arch/arm/boot/dts/amlogic/meson8_t8_2G.dtd	2016-06-11 15:59:55.210940179 +0200
++++ linux-83ba060/arch/arm/boot/dts/amlogic/meson8_t8_2G.dtd	2016-06-11 16:04:36.000000000 +0200
+@@ -333,6 +333,19 @@
+ 	};
+ 
+ /// ***************************************************************************************
++///    -       Vfd
++//$$ DEVICE="m1-vfd"
++//$$ L2 PROP_STR = "status"
++    m1-vfd{
++               compatible = "amlogic,m1-vfd";
++               dev_name = "m1-vfd.0";
++               status = "okay";
++               vfd_stb_pin = "GPIOH_3";
++               vfd_clk_pin =  "GPIOH_6";
++               vfd_data_pin = "GPIOH_5";
++       };
++
++/// ***************************************************************************************
+ ///	-	UART
+ //$$ MODULE="UART"
+ //$$ DEVICE="uart_ao"
+@@ -491,7 +504,7 @@
+             gpio_dat3 = "CARD_4";
+             jtag_pin = "CARD_0";
+             gpio_cd = "CARD_6";
+-            gpio_ro = "GPIOZ_0";
++            //gpio_ro = "GPIOZ_0";
+             irq_in = <3>;
+             irq_out = <5>;
+             card_type = <5>; /* 0:unknown, 1:mmc card(include eMMC), 2:sd card(include tSD), 3:sdio device(ie:sdio-wifi), 4:SD combo (IO+mem) card, 5:NON sdio device(means sd/mmc card), other:reserved */

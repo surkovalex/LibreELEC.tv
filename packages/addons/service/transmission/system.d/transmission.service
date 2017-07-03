@@ -1,0 +1,13 @@
+[Unit]
+Description=Transmission BT Client
+Requires=network-online.service
+After=network-online.service
+
+[Service]
+Restart=always
+RestartSec=10s
+TimeoutStartSec=0
+ExecStart=/usr/bin/transmission-daemon -f
+
+[Install]
+WantedBy=multi-user.target

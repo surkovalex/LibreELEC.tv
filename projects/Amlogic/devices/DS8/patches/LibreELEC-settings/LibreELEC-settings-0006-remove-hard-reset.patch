@@ -1,0 +1,55 @@
+From 6a497855791a1e5cabaadc7733acc79a3f453515 Mon Sep 17 00:00:00 2001
+From: alex <surkov.alex@gmail.com>
+Date: Wed, 12 Apr 2017 20:23:06 +0300
+Subject: [PATCH 6/6] remove hard reset
+
+---
+ src/resources/lib/modules/system.py | 25 -------------------------
+ 1 file changed, 25 deletions(-)
+
+diff --git a/src/resources/lib/modules/system.py b/src/resources/lib/modules/system.py
+index cc0afbf..dc99a67 100644
+--- a/src/resources/lib/modules/system.py
++++ b/src/resources/lib/modules/system.py
+@@ -266,14 +266,6 @@ class system:
+                             'InfoText': 724,
+                             'order': 1,
+                             },
+-                        'oe_reset': {
+-                            'name': 32325,
+-                            'value': '0',
+-                            'action': 'reset_oe',
+-                            'type': 'button',
+-                            'InfoText': 725,
+-                            'order': 2,
+-                            },
+                         },
+                     },
+                 'debug': {
+@@ -837,23 +829,6 @@ class system:
+             self.oe.set_busy(0)
+             self.oe.dbg_log('system::reset_xbmc', 'ERROR: (' + repr(e) + ')', 4)
+ 
+-    def reset_oe(self, listItem=None):
+-        try:
+-            self.oe.dbg_log('system::reset_oe', 'enter_function', 0)
+-            if self.ask_sure_reset('Hard') == 1:
+-                self.oe.set_busy(1)
+-                reset_file = open(self.LIBREELEC_RESET_FILE, 'w')
+-                reset_file.write('reset')
+-                reset_file.close()
+-                self.oe.winOeMain.close()
+-                time.sleep(1)
+-                xbmc.executebuiltin('Reboot')
+-                self.oe.set_busy(0)
+-            self.oe.dbg_log('system::reset_oe', 'exit_function', 0)
+-        except Exception, e:
+-            self.oe.set_busy(0)
+-            self.oe.dbg_log('system::reset_oe', 'ERROR: (' + repr(e) + ')', 4)
+-
+     def ask_sure_reset(self, part):
+         try:
+             self.oe.dbg_log('system::ask_sure_reset', 'enter_function', 0)
+-- 
+1.9.1
+

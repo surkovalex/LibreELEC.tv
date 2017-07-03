@@ -70,7 +70,7 @@ fi
 if [ -z "$DEVICE" ]; then
   TARGET_VERSION="$PROJECT.$TARGET_ARCH-$LIBREELEC_VERSION"
 else
-  TARGET_VERSION="$PROJECT.$DEVICE.$TARGET_ARCH-$LIBREELEC_VERSION"
+  TARGET_VERSION="$PROJECT.$TARGET_ARCH-$DEVICE-$LIBREELEC_VERSION"
 fi
 IMAGE_NAME="$DISTRONAME-$TARGET_VERSION"
 
@@ -78,7 +78,7 @@ if [ "$DEVEL_VERSION" = "devel" ] ; then
   if [ -z "$DEVICE" ]; then
     IMAGE_NAME="$DISTRONAME-$PROJECT.$TARGET_ARCH-$OS_VERSION-$LIBREELEC_VERSION"
   else
-    IMAGE_NAME="$DISTRONAME-$PROJECT.$DEVICE.$TARGET_ARCH-$OS_VERSION-$LIBREELEC_VERSION"
+    IMAGE_NAME="$DISTRONAME-$PROJECT.$TARGET_ARCH-$DEVICE-$OS_VERSION-$LIBREELEC_VERSION"
   fi
 fi
 
@@ -128,12 +128,14 @@ if [ "$TARGET_ARCH" = "x86_64" -o "$TARGET_ARCH" = "powerpc64" ]; then
 fi
 
 echo "$TARGET_VERSION" > $INSTALL/etc/release
+echo "$DEVICE" > $INSTALL/etc/device
 
 # create /etc/os-release
 echo -e "NAME=\"$DISTRONAME\"" > $INSTALL/etc/os-release
 echo -e "VERSION=\"$LIBREELEC_VERSION\"" >> $INSTALL/etc/os-release
 echo -e "ID=\"libreelec\"" >> $INSTALL/etc/os-release
 echo -e "VERSION_ID=\"$OS_VERSION\"" >> $INSTALL/etc/os-release
+echo -e "DEVICE=\"$DEVICE\"" >> $INSTALL/etc/os-release
 echo -e "PRETTY_NAME=\"$DISTRONAME ($LIBREELEC_BUILD) - Version: $LIBREELEC_VERSION\"" >> $INSTALL/etc/os-release
 echo -e "HOME_URL=\"https://libreelec.tv\"" >> $INSTALL/etc/os-release
 echo -e "BUG_REPORT_URL=\"$ORIGIN_URL\"" >> $INSTALL/etc/os-release
@@ -198,7 +200,7 @@ $SCRIPTS/install network
 [ "$TESTING" = "yes" ] && $SCRIPTS/install testing
 
 # Install gdb in all builds, including releases
-$SCRIPTS/install debug
+#$SCRIPTS/install debug
 
 # OEM packages
 [ "$OEM_SUPPORT" = "yes" ] && $SCRIPTS/install oem
@@ -327,7 +329,7 @@ if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "noobs" ]
   tar cf $TARGET_IMG/$IMAGE_NAME.tar -C target $IMAGE_NAME
 
   # create image files if requested
-  if [[ ( "$1" = "amlpkg" || "$1" = "noobs" || "$1" = "mkimage" ) && -n "$BOOTLOADER" ]]; then
+  if [[ ( "$1" = "noobs" || "$1" = "mkimage" ) && -n "$BOOTLOADER" ]]; then
     # projects can set KERNEL_NAME (kernel.img)
     if [ -z "$KERNEL_NAME" ] ; then
       KERNEL_NAME="KERNEL"
@@ -371,7 +373,11 @@ if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "noobs" ]
   if [ "$1" = "amlpkg" ]; then
     echo "Creating Amlogic ZIP update package"
 
-    INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/install"
+    if [ -n "$DEVICE" -a -d "$PROJECT_DIR/$PROJECT/devices/$DEVICE/install" ]; then
+      INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/devices/$DEVICE/install"
+    else
+      INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/install"
+    fi
     AML_PKG_DIR="$RELEASE_DIR/ampl-pkg"
 
     # create package directory
@@ -407,6 +413,9 @@ if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "noobs" ]
     mkdir -p sign
     SIGNAPK_DIR="$ROOT/tools/signapk"
     java -Xmx1024m -jar $SIGNAPK_DIR/signapk.jar -w $SIGNAPK_DIR/testkey.x509.pem $SIGNAPK_DIR/testkey.pk8 update.zip sign/$IMAGE_NAME-update.zip
+
+    # copy update.zip to target folder
+    cp -f sign/$IMAGE_NAME-update.zip $TARGET_IMG
 
     # create the auto-install package
     echo "Creating Amlogic ZIP auto-install package"

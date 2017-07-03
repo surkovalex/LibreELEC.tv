@@ -1,0 +1,33 @@
+diff --git a/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd b/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd
+index 2b33f14..75befde 100755
+--- a/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd
++++ b/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd
+@@ -332,6 +332,19 @@ void root_func(){
+ 	};
+ 
+ /// ***************************************************************************************
++///    -       Vfd
++//$$ DEVICE="m1-vfd"
++//$$ L2 PROP_STR = "status"
++    m1-vfd{
++               compatible = "amlogic,m1-vfd";
++               dev_name = "m1-vfd.0";
++               status = "okay";
++               vfd_stb_pin = "GPIOH_3";
++               vfd_clk_pin =  "GPIOH_6";
++               vfd_data_pin = "GPIOH_5";
++       };
++
++/// ***************************************************************************************
+ ///	-	UART
+ //$$ MODULE="UART"
+ //$$ DEVICE="uart_ao"
+@@ -906,7 +919,7 @@ sdio{
+ 			port-config = <0>; /** 0: default */
+ 			port-dma = <0>; /** 0: default, 1: single, 2: incr, 3: incr4, 4: incr8, 5: incr16, 6: disable*/
+ 			port-id-mode = <0>; /** 0: hardware, 1: sw_host, 2: sw_slave*/
+-			gpio-vbus-power = "GPIODV_23";
++			gpio-vbus-power = "GPIOY_14";
+ 			gpio-work-mask	= <1>; /**0: work on pulldown,1:work on pullup*/
+ 			status = "okay";
+ 		};

@@ -1,0 +1,3 @@
+  # Kernel extra targets to build
+    KERNEL_UBOOT_EXTRA_TARGET="gxbb_p200_2G.dtb"
+    KERNEL_MAKE_EXTRACMD="gxbb_p200_2G.dtb"

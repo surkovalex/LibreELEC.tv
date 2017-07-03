@@ -1,0 +1,6 @@
+  # Kernel extra targets to build
+    KERNEL_UBOOT_EXTRA_TARGET="gxl_p212_1g.dtb gxl_p212_2g.dtb"
+    KERNEL_MAKE_EXTRACMD="gxl_p212_1g.dtb gxl_p212_2g.dtb"
+
+    ADDITIONAL_DRIVERS="$ADDITIONAL_DRIVERS qca9377-aml mt7601u-aml mt7603u-aml"
+    FIRMWARE="$FIRMWARE rtl8723bs_bt qca9377-firmware-aml"

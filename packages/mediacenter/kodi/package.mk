@@ -31,6 +31,10 @@ PKG_LONGDESC="Kodi Media Center (which was formerly named Xbox Media Center or X
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
 
+if [ "$KODIPLAYER_DRIVER" = libamcodec ]; then
+    PKG_PATCH_DIRS="amlogic"
+fi
+
 PKG_CMAKE_SCRIPT="$PKG_BUILD/project/cmake/CMakeLists.txt"
 
   get_graphicdrivers
@@ -324,6 +328,13 @@ post_makeinstall_target() {
       cp $PKG_DIR/config/appliance.xml $INSTALL/usr/share/kodi/system/settings
     fi
 
+  mkdir -p $INSTALL/usr/share/kodi/config/
+    if [ -n "$DEVICE" -a -f $PROJECT_DIR/$PROJECT/devices/$DEVICE/kodi/network_wait ]; then
+      cp -R $PROJECT_DIR/$PROJECT/devices/$DEVICE/kodi/network_wait $INSTALL/usr/share/kodi/config
+    elif [ -f $PROJECT_DIR/$PROJECT/kodi/network_wait ]; then
+      cp -R $PROJECT_DIR/$PROJECT/kodi/network_wait $INSTALL/usr/share/kodi/config
+    fi
+
   # update addon manifest
   ADDON_MANIFEST=$INSTALL/usr/share/kodi/system/addon-manifest.xml
   xmlstarlet ed -L -d "/addons/addon[text()='service.xbmc.versioncheck']" $ADDON_MANIFEST
@@ -333,6 +344,10 @@ post_makeinstall_target() {
   xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "os.openelec.tv" $ADDON_MANIFEST
   xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "repository.libreelec.tv" $ADDON_MANIFEST
   xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "service.libreelec.settings" $ADDON_MANIFEST
+
+  if [ "$VFD_SUPPORT" = yes ]; then
+    xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "script.service.vfd" $ADDON_MANIFEST
+  fi
 
   # more binaddons cross compile badness meh
   sed -e "s:INCLUDE_DIR /usr/include/kodi:INCLUDE_DIR $SYSROOT_PREFIX/usr/include/kodi:g" \

@@ -1,0 +1,32 @@
+From 37bc9218498f2dabd20c49700f7a4b00bc5a36ee Mon Sep 17 00:00:00 2001
+From: alex <surkov.alex@gmail.com>
+Date: Sun, 28 May 2017 13:58:42 +0300
+Subject: [PATCH] add mapping for browser home key on linux
+
+---
+ xbmc/input/linux/LinuxInputDevices.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/xbmc/input/linux/LinuxInputDevices.cpp b/xbmc/input/linux/LinuxInputDevices.cpp
+index ef0d494..e3bd7b1 100644
+--- a/xbmc/input/linux/LinuxInputDevices.cpp
++++ b/xbmc/input/linux/LinuxInputDevices.cpp
+@@ -229,6 +229,7 @@ KeyMap keyMap[] = {
+   { KEY_VOLUMEUP      , XBMCK_VOLUME_UP   },
+   { KEY_POWER         , XBMCK_POWER       },
+   { KEY_SLEEP         , XBMCK_POWER       },
++  { KEY_COFFEE        , XBMCK_VOLUME_MUTE },
+   { KEY_KPEQUAL       , XBMCK_KP_EQUALS   },
+   { KEY_PAUSE         , XBMCK_PAUSE       },
+   { KEY_PAUSECD       , XBMCK_PAUSE       },
+@@ -248,6 +249,7 @@ KeyMap keyMap[] = {
+   { KEY_RECORD        , XBMCK_RECORD      },
+   { KEY_REWIND        , XBMCK_REWIND      },
+   { KEY_PHONE         , XBMCK_PHONE       },
++  { KEY_HOMEPAGE      , XBMCK_BROWSER_HOME},
+   { KEY_REFRESH       , XBMCK_SHUFFLE     },
+   { KEY_SCROLLUP      , XBMCK_PAGEUP      },
+   { KEY_SCROLLDOWN    , XBMCK_PAGEDOWN    },
+-- 
+1.9.1
+

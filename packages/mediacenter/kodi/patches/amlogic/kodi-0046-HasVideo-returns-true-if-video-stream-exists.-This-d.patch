@@ -1,0 +1,26 @@
+From b88a811561a39872d11a9a6ccdcb8b44a2a6a7fb Mon Sep 17 00:00:00 2001
+From: Anton Fedchin <anightik@gmail.com>
+Date: Fri, 11 Mar 2016 16:58:53 +0300
+Subject: [PATCH] HasVideo returns true if video stream exists. This don't
+ allow start visualization if audio is opened before video.
+
+---
+ xbmc/cores/VideoPlayer/VideoPlayer.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/cores/VideoPlayer/VideoPlayer.cpp b/xbmc/cores/VideoPlayer/VideoPlayer.cpp
+index c6c943f..2a25a5d 100644
+--- a/xbmc/cores/VideoPlayer/VideoPlayer.cpp
++++ b/xbmc/cores/VideoPlayer/VideoPlayer.cpp
+@@ -3074,7 +3074,7 @@ void CVideoPlayer::Pause()
+ 
+ bool CVideoPlayer::HasVideo() const
+ {
+-  return m_HasVideo;
++  return m_HasVideo || GetVideoStream() >= 0;
+ }
+ 
+ bool CVideoPlayer::HasAudio() const
+-- 
+1.9.1
+

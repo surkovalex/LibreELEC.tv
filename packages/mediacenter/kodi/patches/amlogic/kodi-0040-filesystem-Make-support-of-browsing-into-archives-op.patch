@@ -1,0 +1,114 @@
+From 6e2235d235c21dfba8ba37500fb90c01c7bfb3f6 Mon Sep 17 00:00:00 2001
+From: popcornmix <popcornmix@gmail.com>
+Date: Sun, 10 Aug 2014 16:45:16 +0100
+Subject: [PATCH] filesystem: Make support of browsing into archives optional
+
+The ability to browse, scan and play content in archives can cause problems on low powered/low memory devices.
+It's quite common to see reports of a large rar file that causes xbmc to crash with an out-of-memory error when browsing or scanning.
+It also can be slow as any archive in the directory is opened and extracted.
+
+This causes issues for people who scan library with archives disabled, then subsequently enable it.
+The library has the .rar files in which don't play without removing and re-adding.
+
+We'll let people who don't use archives disable it manually
+---
+ addons/resource.language.en_gb/resources/strings.po |  9 +++++++++
+ system/settings/rbp.xml                             | 11 +++++++++++
+ xbmc/Util.cpp                                       |  4 ++--
+ xbmc/filesystem/FileDirectoryFactory.cpp            |  4 ++++
+ 4 files changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 9e4a877..c892dfa 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -19388,6 +19388,15 @@ msgstr ""
+ #: system/settings/rbp.xml
+ msgctxt "#38010"
+ msgid "GPU accelerated"
++
++#: system/settings/settings.xml
++msgctxt "#38040"
++msgid "Support browsing into archives"
++msgstr ""
++
++#: system/settings/settings.xml
++msgctxt "#38041"
++msgid "Allow viewing and playing files in archives (e.g. zip, rar)"
+ msgstr ""
+ 
+ #. Setting #38011 "Show All Items entry"
+diff --git a/system/settings/rbp.xml b/system/settings/rbp.xml
+index 62e9c8e..e8b0d3d 100644
+--- a/system/settings/rbp.xml
++++ b/system/settings/rbp.xml
+@@ -102,4 +102,15 @@
+       </group>
+     </category>
+   </section>
++  <section id="library">
++    <category id="filelists">
++      <group id="1">
++        <setting id="filelists.browsearchives" type="boolean" label="38040" help="38041">
++          <level>1</level>
++          <default>true</default>
++          <control type="toggle" />
++        </setting>
++      </group>
++    </category>
++  </section>
+ </settings>
+diff --git a/xbmc/Util.cpp b/xbmc/Util.cpp
+index c356794..da1508d 100644
+--- a/xbmc/Util.cpp
++++ b/xbmc/Util.cpp
+@@ -1899,7 +1899,7 @@ void CUtil::ScanPathsForAssociatedItems(const std::string& videoName,
+     URIUtils::RemoveExtension(strCandidate);
+     if (StringUtils::StartsWithNoCase(strCandidate, videoName))
+     {
+-      if (URIUtils::IsRAR(pItem->GetPath()) || URIUtils::IsZIP(pItem->GetPath()))
++      if (CSettings::GetInstance().GetBool("filelists.browsearchives") && (URIUtils::IsRAR(pItem->GetPath()) || URIUtils::IsZIP(pItem->GetPath())))
+         CUtil::ScanArchiveForAssociatedItems(pItem->GetPath(), "", item_exts, associatedFiles);
+       else
+       {
+@@ -1909,7 +1909,7 @@ void CUtil::ScanPathsForAssociatedItems(const std::string& videoName,
+     }
+     else
+     {
+-      if (URIUtils::IsRAR(pItem->GetPath()) || URIUtils::IsZIP(pItem->GetPath()))
++      if (CSettings::GetInstance().GetBool("filelists.browsearchives") && (URIUtils::IsRAR(pItem->GetPath()) || URIUtils::IsZIP(pItem->GetPath())))
+         CUtil::ScanArchiveForAssociatedItems(pItem->GetPath(), videoName, item_exts, associatedFiles);
+     }
+   }
+diff --git a/xbmc/filesystem/FileDirectoryFactory.cpp b/xbmc/filesystem/FileDirectoryFactory.cpp
+index a0fd0a9..688b71a 100644
+--- a/xbmc/filesystem/FileDirectoryFactory.cpp
++++ b/xbmc/filesystem/FileDirectoryFactory.cpp
+@@ -40,6 +40,7 @@
+ #include "playlists/PlayListFactory.h"
+ #include "Directory.h"
+ #include "File.h"
++#include "settings/Settings.h"
+ #include "FileItem.h"
+ #include "utils/StringUtils.h"
+ #include "URL.h"
+@@ -116,6 +117,8 @@ IFileDirectory* CFileDirectoryFactory::Create(const CURL& url, CFileItem* pItem,
+     return NULL;
+   }
+ #endif
++  if (CSettings::GetInstance().GetBool("filelists.browsearchives"))
++  {
+   if (url.IsFileType("zip"))
+   {
+     CURL zipURL = URIUtils::CreateArchivePath("zip", url);
+@@ -189,6 +192,7 @@ IFileDirectory* CFileDirectoryFactory::Create(const CURL& url, CFileItem* pItem,
+     }
+     return NULL;
+   }
++  }
+   if (url.IsFileType("xbt"))
+   {
+     CURL xbtUrl = URIUtils::CreateArchivePath("xbt", url);
+-- 
+1.9.1
+

@@ -34,12 +34,23 @@ PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
 
 make_target() {
-  LDFLAGS="" make -C $(kernel_path) M=$PKG_BUILD/mali \
-    CONFIG_MALI400=m CONFIG_MALI450=m
+ if [ $TARGET_ARCH = "aarch64" ];then
+   LDFLAGS="" make -C $(kernel_path) M=$ROOT/$PKG_BUILD/mali \
+     CONFIG_MALI400=m CONFIG_MALI450=m
+ elif [ $TARGET_ARCH = "arm" ];then
+   : # nothing todo
+ fi
 }
 
 makeinstall_target() {
-  LDFLAGS="" make -C $(kernel_path) M=$PKG_BUILD/mali \
-    INSTALL_MOD_PATH=$INSTALL/usr INSTALL_MOD_STRIP=1 DEPMOD=: \
-  modules_install
+ if [ $TARGET_ARCH = "aarch64" ];then
+   LDFLAGS="" make -C $(kernel_path) M=$ROOT/$PKG_BUILD/mali \
+     INSTALL_MOD_PATH=$INSTALL/usr INSTALL_MOD_STRIP=1 DEPMOD=: \
+   modules_install
+   mkdir -p $INSTALL/usr/lib/modprobe.d
+   echo "options mali mali_shared_mem_size=0x40000000" > $INSTALL/usr/lib/modprobe.d/mali.conf
+ elif [ $TARGET_ARCH = "arm" ];then
+   mkdir -p $INSTALL/usr/lib/modules-load.d
+   echo "mali" > $INSTALL/usr/lib/modules-load.d/mali.conf
+ fi
 }

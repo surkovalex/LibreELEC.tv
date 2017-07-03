@@ -1,0 +1,25 @@
+From 09da0a503a243ede62adc023780490a2eacbddf7 Mon Sep 17 00:00:00 2001
+From: alex <surkov.alex@gmail.com>
+Date: Sat, 27 May 2017 21:35:26 +0300
+Subject: [PATCH] Increase timeout on CDVDMsgGeneralSynchronize
+
+---
+ xbmc/cores/VideoPlayer/DVDMessage.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDMessage.cpp b/xbmc/cores/VideoPlayer/DVDMessage.cpp
+index c7df4a6..4114ecb 100644
+--- a/xbmc/cores/VideoPlayer/DVDMessage.cpp
++++ b/xbmc/cores/VideoPlayer/DVDMessage.cpp
+@@ -89,7 +89,7 @@ bool CDVDMsgGeneralSynchronize::Wait(unsigned int milliseconds, unsigned int sou
+ 
+ void CDVDMsgGeneralSynchronize::Wait(std::atomic<bool>& abort, unsigned int source)
+ {
+-  while(!Wait(100, source) && !abort);
++  while(!Wait(200, source) && !abort);
+ }
+ 
+ long CDVDMsgGeneralSynchronize::Release()
+-- 
+1.9.1
+

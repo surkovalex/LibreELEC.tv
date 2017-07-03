@@ -1,0 +1,25 @@
+From aa50a4615bf2878ba962017294f2ff3f18360199 Mon Sep 17 00:00:00 2001
+From: alex <surkov.alex@gmail.com>
+Date: Sun, 26 Feb 2017 13:24:25 -0500
+Subject: [PATCH 4/6] change download url for update channel
+
+---
+ src/resources/lib/modules/system.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/resources/lib/modules/system.py b/src/resources/lib/modules/system.py
+index f58176c..cc0afbf 100644
+--- a/src/resources/lib/modules/system.py
++++ b/src/resources/lib/modules/system.py
+@@ -691,7 +691,7 @@ class system:
+         try:
+             self.oe.dbg_log('system::get_json', 'enter_function', 0)
+             if url is None:
+-                url = self.UPDATE_DOWNLOAD_URL % ('releases', 'releases.json')
++                url = self.UPDATE_DOWNLOAD_URL2 % ('update', 'releases.json')
+             if url.split('/')[-1] != 'releases.json':
+                 url = url + '/releases.json'
+             data = self.oe.load_url(url)
+-- 
+1.9.1
+

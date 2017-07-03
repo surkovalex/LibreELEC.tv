@@ -1,0 +1,79 @@
+diff --git a/drivers/amlogic/hdmi/hdmi_tx_20/hdmi_tx_main.c b/drivers/amlogic/hdmi/hdmi_tx_20/hdmi_tx_main.c
+index e771fac..b0512b6 100644
+--- a/drivers/amlogic/hdmi/hdmi_tx_20/hdmi_tx_main.c
++++ b/drivers/amlogic/hdmi/hdmi_tx_20/hdmi_tx_main.c
+@@ -71,6 +71,14 @@
+ #define HDMI_TX_RESOURCE_NUM 4
+ #define HDMI_TX_PWR_CTRL_NUM	6
+ 
++#ifdef CONFIG_VFD_ENABLE
++extern int set_dotled_string(const char *buf,int count);
++#endif
++
++#ifdef CONFIG_VFD_ENABLE
++#include "../../input/vfd/vfd_comm.h"
++#endif
++
+ static dev_t hdmitx_id;
+ static struct class *hdmitx_class;
+ static int set_disp_mode_auto(void);
+@@ -2492,6 +2500,12 @@ void hdmitx_hpd_plugin_handler(struct work_struct *work)
+ 	hdev->hpd_state = 1;
+ 	switch_set_state(&sdev, 1);
+ 	switch_set_state(&hdmi_audio, 1);
++	#ifdef CONFIG_VFD_ENABLE
++	if (vfd_flag) {
++	    set_dotled_string("dothdmi",8);
++	    printk("dothdmi\n");
++	}
++	#endif
+ 
+ 	mutex_unlock(&setclk_mutex);
+ }
+@@ -2546,6 +2560,12 @@ void hdmitx_hpd_plugout_handler(struct work_struct *work)
+ 	hdev->hpd_state = 0;
+ 	switch_set_state(&sdev, 0);
+ 	switch_set_state(&hdmi_audio, 0);
++	#ifdef CONFIG_VFD_ENABLE
++	if (vfd_flag) {
++	    set_dotled_string("dotcvbs",8);
++	    printk("dotcvbs\n");
++	}
++	#endif
+ 	mutex_unlock(&setclk_mutex);
+ }
+ 
+diff --git a/drivers/amlogic/input/vfd/vfd.c b/drivers/amlogic/input/vfd/vfd.c
+index 29003d1..c1c04af 100644
+--- a/drivers/amlogic/input/vfd/vfd.c
++++ b/drivers/amlogic/input/vfd/vfd.c
+@@ -60,6 +60,8 @@
+ 
+ #ifdef CONFIG_VFD_TM1628
+ #include "vfd_comm.h"
++int vfd_flag = 0;
++EXPORT_SYMBOL(vfd_flag);
+ #endif
+ 
+ #ifdef CONFIG_HAS_EARLYSUSPEND
+@@ -372,6 +374,8 @@ static int __init vfd_probe(struct platform_device *pdev)
+     }
+     vfd_input_dbg("input_register_device completed \r\n");
+ 
++    vfd_flag = 1;
++
+     register_vfd_dev(gp_vfd);
+ 
+ #ifdef CONFIG_HAS_EARLYSUSPEND
+diff --git a/drivers/amlogic/input/vfd/vfd_comm.h b/drivers/amlogic/input/vfd/vfd_comm.h
+index 95536b0..bee997b 100644
+--- a/drivers/amlogic/input/vfd/vfd_comm.h
++++ b/drivers/amlogic/input/vfd/vfd_comm.h
+@@ -6,4 +6,5 @@ int hardware_init(struct device_node* vfd_node);
+ int get_vfd_key_value(void);
+ int set_vfd_led_value(char *display_code);
+ void Dot_DotLed_Show(char *buf);
+-int set_dotled_string(const char *buf,int count);
+\ No newline at end of file
++int set_dotled_string(const char *buf,int count);
++extern int vfd_flag;

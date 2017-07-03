@@ -1,0 +1,14 @@
+[Unit]
+Description=VFD poweroff script
+After=kodi.service
+Before=systemd-poweroff.service
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'echo @ > /sys/devices/aml_vfd.48/led'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=poweroff.target
+
