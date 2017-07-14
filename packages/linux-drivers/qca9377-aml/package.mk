@@ -41,5 +41,5 @@ make_target() {
 
 makeinstall_target() {
   mkdir -p $INSTALL/usr/lib/modules/$(get_module_dir)/$PKG_NAME
-  cp $ROOT/$PKG_BUILD/wlan.ko $INSTALL/usr/lib/modules/$(get_module_dir)/$PKG_NAME/
+  cp $PKG_BUILD/wlan.ko $INSTALL/usr/lib/modules/$(get_module_dir)/$PKG_NAME/
 }

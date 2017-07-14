@@ -35,7 +35,7 @@ PKG_AUTORECONF="no"
 
 make_target() {
  if [ $TARGET_ARCH = "aarch64" ];then
-   LDFLAGS="" make -C $(kernel_path) M=$ROOT/$PKG_BUILD/mali \
+   LDFLAGS="" make -C $(kernel_path) M=$PKG_BUILD/mali \
      CONFIG_MALI400=m CONFIG_MALI450=m
  elif [ $TARGET_ARCH = "arm" ];then
    : # nothing todo
@@ -44,7 +44,7 @@ make_target() {
 
 makeinstall_target() {
  if [ $TARGET_ARCH = "aarch64" ];then
-   LDFLAGS="" make -C $(kernel_path) M=$ROOT/$PKG_BUILD/mali \
+   LDFLAGS="" make -C $(kernel_path) M=$PKG_BUILD/mali \
      INSTALL_MOD_PATH=$INSTALL/usr INSTALL_MOD_STRIP=1 DEPMOD=: \
    modules_install
    mkdir -p $INSTALL/usr/lib/modprobe.d
