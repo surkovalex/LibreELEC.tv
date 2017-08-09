@@ -5,15 +5,15 @@ Subject: [PATCH] EGLNativeTypeAmlogic: implement Nougat-kernel style
  fractional frame rates
 
 ---
- xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp | 41 ++++++++++++++++++++++-------
+ xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp | 45 ++++++++++++++++++++++-------
  xbmc/windowing/egl/EGLNativeTypeAmlogic.h   |  2 +-
- 2 files changed, 32 insertions(+), 11 deletions(-)
+ 2 files changed, 36 insertions(+), 11 deletions(-)
 
 diff --git a/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp b/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
-index 3cbb604..6921be4 100644
+index c655a56..5965f01 100644
 --- a/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
 +++ b/xbmc/windowing/egl/EGLNativeTypeAmlogic.cpp
-@@ -29,6 +29,7 @@
+@@ -30,6 +30,7 @@
  #include <linux/fb.h>
  #include <sys/ioctl.h>
  #include <EGL/egl.h>
@@ -21,7 +21,7 @@ index 3cbb604..6921be4 100644
  
  CEGLNativeTypeAmlogic::CEGLNativeTypeAmlogic()
  {
-@@ -128,7 +129,15 @@ bool CEGLNativeTypeAmlogic::GetNativeResolution(RESOLUTION_INFO *res) const
+@@ -131,7 +132,15 @@ bool CEGLNativeTypeAmlogic::GetNativeResolution(RESOLUTION_INFO *res) const
  {
    std::string mode;
    SysfsUtils::GetString("/sys/class/display/mode", mode);
@@ -38,12 +38,13 @@ index 3cbb604..6921be4 100644
  }
  
  bool CEGLNativeTypeAmlogic::SetNativeResolution(const RESOLUTION_INFO &res)
-@@ -143,10 +152,11 @@ bool CEGLNativeTypeAmlogic::SetNativeResolution(const RESOLUTION_INFO &res)
+@@ -146,11 +155,11 @@ bool CEGLNativeTypeAmlogic::SetNativeResolution(const RESOLUTION_INFO &res)
  #endif
  
    // Don't set the same mode as current
 -  std::string mode;
 -  SysfsUtils::GetString("/sys/class/display/mode", mode);
+-  
 -  if (res.strId != mode)
 -    result = SetDisplayResolution(res.strId.c_str());
 +  RESOLUTION_INFO current_resolution;
@@ -54,7 +55,7 @@ index 3cbb604..6921be4 100644
  
    DealWithScale(res);
  
-@@ -166,6 +171,18 @@ bool CEGLNativeTypeAmlogic::ProbeResolutions(std::vector<RESOLUTION_INFO> &resol
+@@ -172,6 +181,18 @@ bool CEGLNativeTypeAmlogic::ProbeResolutions(std::vector<RESOLUTION_INFO> &resol
    {
      if(aml_mode_to_resolution(i->c_str(), &res))
        resolutions.push_back(res);
@@ -73,7 +74,7 @@ index 3cbb604..6921be4 100644
    }
    return resolutions.size() > 0;
  
-@@ -190,14 +207,18 @@ bool CEGLNativeTypeAmlogic::ShowWindow(bool show)
+@@ -196,14 +217,18 @@ bool CEGLNativeTypeAmlogic::ShowWindow(bool show)
    return true;
  }
  
@@ -110,5 +111,5 @@ index 96aa6f7..b7c053b 100644
    void DealWithScale(const RESOLUTION_INFO &res);
    void EnableFreeScale(const RESOLUTION_INFO &res);
 -- 
-1.8.3.1
+1.9.1
 
