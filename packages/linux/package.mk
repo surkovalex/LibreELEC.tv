@@ -195,7 +195,7 @@ make_target() {
   DTB_BLOBS=($(ls arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic/*.dtb 2>/dev/null || true))
   DTB_BLOBS_COUNT="${#DTB_BLOBS[@]}"
   if [ "$DTB_BLOBS_COUNT" -gt 1 ]; then
-    $ROOT/tools/dtbTool/dtbTool -o arch/$TARGET_KERNEL_ARCH/boot/dtb.img -p scripts/dtc/ arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic/
+    $TOOLCHAIN/bin/dtbTool -o arch/$TARGET_KERNEL_ARCH/boot/dtb.img -p scripts/dtc/ arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic/
     MKBOOTIMG_SECOND="arch/$TARGET_KERNEL_ARCH/boot/dtb.img"
   elif [ "$DTB_BLOBS_COUNT" -eq 1 ]; then
     MKBOOTIMG_SECOND="$DTB_BLOBS"
