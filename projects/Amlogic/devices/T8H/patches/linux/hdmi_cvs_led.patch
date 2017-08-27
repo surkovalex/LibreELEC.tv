@@ -1,5 +1,5 @@
 diff --git a/drivers/amlogic/hdmi/hdmi_tx_20/hdmi_tx_main.c b/drivers/amlogic/hdmi/hdmi_tx_20/hdmi_tx_main.c
-index e771fac..b0512b6 100644
+index 6717bc1..6ba4faa 100644
 --- a/drivers/amlogic/hdmi/hdmi_tx_20/hdmi_tx_main.c
 +++ b/drivers/amlogic/hdmi/hdmi_tx_20/hdmi_tx_main.c
 @@ -71,6 +71,14 @@
@@ -17,27 +17,27 @@ index e771fac..b0512b6 100644
  static dev_t hdmitx_id;
  static struct class *hdmitx_class;
  static int set_disp_mode_auto(void);
-@@ -2492,6 +2500,12 @@ void hdmitx_hpd_plugin_handler(struct work_struct *work)
- 	hdev->hpd_state = 1;
+@@ -2167,6 +2175,12 @@ void hdmitx_hpd_plugin_handler(struct work_struct *work)
+ 	set_disp_mode_auto();
+ 	hdmitx_set_audio(hdev, &(hdev->cur_audio_param), hdmi_ch);
  	switch_set_state(&sdev, 1);
- 	switch_set_state(&hdmi_audio, 1);
 +	#ifdef CONFIG_VFD_ENABLE
 +	if (vfd_flag) {
-+	    set_dotled_string("dothdmi",8);
-+	    printk("dothdmi\n");
++		set_dotled_string("dothdmi",8);
++		printk("dothdmi\n");
 +	}
 +	#endif
  
  	mutex_unlock(&setclk_mutex);
  }
-@@ -2546,6 +2560,12 @@ void hdmitx_hpd_plugout_handler(struct work_struct *work)
- 	hdev->hpd_state = 0;
+@@ -2220,6 +2234,12 @@ void hdmitx_hpd_plugout_handler(struct work_struct *work)
+ 	hdmitx_edid_clear(hdev);
+ 	hdmitx_edid_ram_buffer_clear(hdev);
  	switch_set_state(&sdev, 0);
- 	switch_set_state(&hdmi_audio, 0);
 +	#ifdef CONFIG_VFD_ENABLE
 +	if (vfd_flag) {
-+	    set_dotled_string("dotcvbs",8);
-+	    printk("dotcvbs\n");
++		set_dotled_string("dotcvbs",8);
++		 printk("dotcvbs\n");
 +	}
 +	#endif
  	mutex_unlock(&setclk_mutex);
