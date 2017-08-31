@@ -1,6 +1,3 @@
   # Kernel extra targets to build
     KERNEL_UBOOT_EXTRA_TARGET="gxl_p212_2g.dtb"
     KERNEL_MAKE_EXTRACMD="gxl_p212_2g.dtb"
-
-    ADDITIONAL_DRIVERS="$ADDITIONAL_DRIVERS qca9377-aml"
-    FIRMWARE="$FIRMWARE qca9377-firmware-aml"

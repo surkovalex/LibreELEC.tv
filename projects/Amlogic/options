@@ -51,14 +51,14 @@
     case $TARGET_ARCH in
       aarch64)
         LINUX="custom"
-        KERNEL_VERSION="6e79ad4"
+        KERNEL_VERSION="a4ddc39"
         KERNEL_URL="https://github.com/kszaq/linux-amlogic-le/archive/$KERNEL_VERSION.tar.gz"
         KERNEL_SOURCE_DIR="linux-amlogic-le-$KERNEL_VERSION*"
         KERNEL_PATCH_DIRS="amlogic-3.14"
         ;;
       arm)
         LINUX="custom"
-        KERNEL_VERSION="a0e98d9"
+        KERNEL_VERSION="ed6619d"
         KERNEL_URL="https://github.com/kszaq/linux/archive/$KERNEL_VERSION.tar.gz"
         ;;
       esac
@@ -119,6 +119,11 @@
   # Space separated list is supported,
   # e.g. FIRMWARE="dvb-firmware misc-firmware wlan-firmware"
     FIRMWARE="misc-firmware wlan-firmware dvb-firmware brcmfmac_sdio-firmware-aml-all"
+
+  if [ "$TARGET_ARCH" = aarch64 ]; then
+    ADDITIONAL_DRIVERS="$ADDITIONAL_DRIVERS qca9377-aml"
+    FIRMWARE="$FIRMWARE qca9377-firmware-aml"
+  fi
 
   if [ "$TARGET_ARCH" = arm ]; then
     KERNEL_TARGET="uImage"
