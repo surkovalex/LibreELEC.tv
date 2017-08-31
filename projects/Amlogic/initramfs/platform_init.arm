@@ -17,11 +17,11 @@
 #  along with LibreELEC.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-hdmimode=720p
+hdmimode="720p"
 
 # Parse command line arguments
 for arg in $(cat /proc/cmdline); do
-  case ${arg} in
+  case $arg in
     hdmimode=*)
       hdmimode=${arg#*=}
       ;;
@@ -122,13 +122,9 @@ esac
 # Set framebuffer geometry to match the resolution
 fbset -fb /dev/fb0 -g $xRes $yRes $vXRes $vYRes $bpp;
 
-for part in /sys/block/*/queue/add_random; do
-  echo 0 > "$part"
-done
-
 # Include deinterlacer into default VFM map
 echo rm default > /sys/class/vfm/map
-echo add default decoder ppmgr deinterlace amlvideo amvideo > /sys/class/vfm/map
+echo add default decoder ppmgr deinterlace amvideo > /sys/class/vfm/map
 
 # Boot with performance governor, then switch to the governor specified in the kernel command line
 # Assume SMP uses shared cpufreq policy for all CPUs
@@ -144,12 +140,4 @@ if [ -n "$scaling_max_freq" ]; then
   echo "$scaling_max_freq" > "$cpufreq/scaling_dflt_freq"
 fi
 
-# set smp_affinity
-#            Binary       Hex
-#    CPU 0    0001         1
-#    CPU 1    0010         2
-#    CPU 2    0100         4
-#    CPU 3    1000         8
-echo 4 > /proc/irq/40/smp_affinity  # eth0
-echo 2 > /proc/irq/64/smp_affinity  # esparser
-echo 2 > /proc/irq/78/smp_affinity  # deinterlace
+echo 1 > /sys/devices/system/cpu/cpufreq/ondemand/io_is_busy
