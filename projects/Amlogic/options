@@ -58,7 +58,7 @@
         ;;
       arm)
         LINUX="custom"
-        KERNEL_VERSION="ed6619d"
+        KERNEL_VERSION="2649c28"
         KERNEL_URL="https://github.com/kszaq/linux/archive/$KERNEL_VERSION.tar.gz"
         ;;
       esac
