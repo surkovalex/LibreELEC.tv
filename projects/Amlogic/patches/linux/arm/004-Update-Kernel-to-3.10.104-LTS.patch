@@ -112,7 +112,6 @@ Subject: [PATCH] Update Kernel to 3.10.104 LTS
  drivers/infiniband/hw/mlx4/qp.c                   |   2 +-
  drivers/infiniband/hw/qib/qib_file_ops.c          |   5 +
  drivers/infiniband/ulp/ipoib/ipoib_main.c         |   4 +-
- drivers/input/joystick/xpad.c                     |   3 +
  drivers/input/misc/ati_remote2.c                  |  36 ++-
  drivers/input/misc/ims-pcu.c                      |   4 +
  drivers/input/misc/max8997_haptic.c               |   6 +-
@@ -3808,20 +3807,6 @@ index b6e049a..a481094 100644
  			goto out_unlock;
  		}
  	}
-diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-index 856c1b0..685e125 100644
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -843,6 +843,9 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
- 	struct usb_endpoint_descriptor *ep_irq_in;
- 	int i, error;
- 
-+	if (intf->cur_altsetting->desc.bNumEndpoints != 2)
-+		return -ENODEV;
-+
- 	for (i = 0; xpad_device[i].idVendor; i++) {
- 		if ((le16_to_cpu(udev->descriptor.idVendor) == xpad_device[i].idVendor) &&
- 		    (le16_to_cpu(udev->descriptor.idProduct) == xpad_device[i].idProduct))
 diff --git a/drivers/input/misc/ati_remote2.c b/drivers/input/misc/ati_remote2.c
 index f63341f..e8c6a48 100644
 --- a/drivers/input/misc/ati_remote2.c
