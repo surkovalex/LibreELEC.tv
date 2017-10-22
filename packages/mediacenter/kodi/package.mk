@@ -198,6 +198,10 @@ else
   KODI_ARCH="-DWITH_ARCH=$TARGET_ARCH"
 fi
 
+if [ "$PROJECT" = "Slice" -o "$PROJECT" = "Slice3" ]; then
+  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET led_tools"
+fi
+
 if [ ! "$KODIPLAYER_DRIVER" = default ]; then
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET $KODIPLAYER_DRIVER"
   if [ "$KODIPLAYER_DRIVER" = bcm2835-driver ]; then
@@ -350,6 +354,9 @@ post_makeinstall_target() {
   xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "os.openelec.tv" $ADDON_MANIFEST
   xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "repository.libreelec.tv" $ADDON_MANIFEST
   xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "service.libreelec.settings" $ADDON_MANIFEST
+  if [ "$PROJECT" = "Slice" -o "$PROJECT" = "Slice3" ]; then
+    xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "service.slice" $ADDON_MANIFEST
+  fi
 
   if [ "$VFD_SUPPORT" = yes ]; then
     xmlstarlet ed -L --subnode "/addons" -t elem -n "addon" -v "script.service.vfd" $ADDON_MANIFEST
