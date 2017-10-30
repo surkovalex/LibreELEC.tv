@@ -163,6 +163,8 @@
   # kernel image name
     KERNEL_NAME="kernel.img"
 
+    INITRAMFS_PARTED_SUPPORT="yes"
+
   # custom addon server url
     ADDON_SERVER_URL="https://raw.github.com/surkovalex/unofficial-addons/$ADDON_VERSION"
     ADDON_PATH="Amlogic/$TARGET_ARCH"

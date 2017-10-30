@@ -251,9 +251,15 @@ rm -rf $FAKEROOT_SCRIPT
 # set permissions
 chmod 0644 $TARGET_IMG/$IMAGE_NAME.system
 
-if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "noobs" ]; then
+if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "amlimg" -o "$1" = "noobs" ]; then
 
   RELEASE_DIR="target/$IMAGE_NAME"
+
+  if [ -n "$DEVICE" -a -d "$PROJECT_DIR/$PROJECT/devices/$DEVICE/install" ]; then
+    INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/devices/$DEVICE/install"
+  else
+    INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/install"
+  fi
 
   # cleanup
   rm -rf $RELEASE_DIR
@@ -359,6 +365,42 @@ if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "noobs" ]
 
   # cleanup release dir
   rm -rf $RELEASE_DIR
+
+  # create Amlogic img file for USB Burning Tool
+  if [ "$1" = "amlimg" ]; then
+    if [[ -d "$INSTALL_SRC_DIR/upgrade"  && -f "$INSTALL_SRC_DIR/files/recovery.img" && -f "$INSTALL_SRC_DIR/files/logo.img" ]]; then
+      echo "Creating Amlogic IMG"
+
+      AML_IMG_DIR="$RELEASE_DIR/aml-img"
+
+      # create img directory
+      mkdir -p "$AML_IMG_DIR"
+
+      pushd "$BUILD/linux-$(kernel_version)" > /dev/null
+      DTB_BLOBS=($(ls arch/$TARGET_KERNEL_ARCH/boot/dts/amlogic/*.dtb 2>/dev/null || true))
+
+      for i in "$DTB_BLOBS"; do
+        AMLIMG_SYSTEM_HEX_SIZE=($(awk '/pname = \"system\"/ { getline;print $4 }' $(sed 's/dtb/dts/g' <<< $i) | tr -d ">;" ))
+        AMLIMG_SYSTEM_SIZE=$(echo $((${AMLIMG_SYSTEM_HEX_SIZE} / 1024)))
+      done
+      popd > /dev/null
+
+      # copy files
+      cp $TARGET_IMG/$IMAGE_NAME.kernel $AML_IMG_DIR/boot.img
+      cp -PR $INSTALL_SRC_DIR/upgrade/* $AML_IMG_DIR
+      cp -PR $INSTALL_SRC_DIR/files/* $AML_IMG_DIR
+      cp "$INSTALL/usr/share/bootloader/dtb.img" $AML_IMG_DIR/meson.dtb
+      mkdir -p $AML_IMG_DIR/temp
+      cp -f $TARGET_IMG/$IMAGE_NAME.system $AML_IMG_DIR/temp/SYSTEM
+      tools/amltool/mke2img -d $AML_IMG_DIR/temp -b $AMLIMG_SYSTEM_SIZE -G 4 -R 1 -o $TARGET_IMG/system.img.ext4 > /dev/null
+      rm -rf $AML_IMG_DIR/temp
+      tools/amltool/img2simg $TARGET_IMG/system.img.ext4 $AML_IMG_DIR/system.img > /dev/null
+      tools/amltool/aml_image_v2_packer_new -r $AML_IMG_DIR/aml_upgrade_package.conf $AML_IMG_DIR $TARGET_IMG/aml_upgrade_package-$DEVICE-$LIBREELEC_VERSION.img
+      rm -f $TARGET_IMG/system.img.ext4
+      rm -f $TARGET_IMG/$IMAGE_NAME.system
+      rm -f $TARGET_IMG/$IMAGE_NAME.kernel
+    fi
+  fi
 
   # create WeTek Play (Amlogic) ZIP update and auto-install packages if requested
   if [ "$1" = "amlpkg" ]; then

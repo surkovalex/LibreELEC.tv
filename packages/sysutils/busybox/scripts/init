@@ -228,6 +228,25 @@
     error "mount_common" "Could not mount $1"
   }
 
+  check_parts() {
+    progress "Check data and cache partitions"
+
+    ERR_ENV=1
+    NEED_FORMAT="no"
+    mkdir -p /tmp/part
+    mount -t ext4 /dev/data /tmp/part >&$SILENT_OUT 2>&1
+    [ "$?" -eq "0" ] && ERR_ENV=0 && umount /dev/data
+    [ "$ERR_ENV" -ne "0" ] && NEED_FORMAT="yes"
+
+    if [ "$NEED_FORMAT" = "yes" ] ; then
+      /usr/sbin/mke2fs -t ext4 -m 0 /dev/cache &>/dev/null
+      /usr/sbin/tune2fs -U random /dev/cache &>/dev/null
+      /usr/sbin/mke2fs -t ext4 -m 0 /dev/data &>/dev/null
+      /usr/sbin/tune2fs -U random /dev/data &>/dev/null
+    fi
+
+  }
+
   get_iscsistart_options() {
     # Convert kernel commandline ISCSI= options to iscsistart options
     IFS_SAVE="$IFS"
@@ -1029,6 +1048,7 @@
   # main boot sequence
   for BOOT_STEP in \
       load_modules \
+      check_parts \
       check_disks \
       mount_flash \
       update_syslinux \

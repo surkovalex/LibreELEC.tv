@@ -17,6 +17,9 @@ noobs:
 amlpkg:
 	./scripts/image amlpkg
 
+amlimg:
+	./scripts/image amlimg
+
 clean:
 	rm -rf $(BUILD_DIRS)/* $(BUILD_DIRS)/.stamps
 
