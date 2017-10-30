@@ -76,3 +76,6 @@ echo 4 > /sys/module/amvdec_h264/parameters/dec_control
 
 # set HDR mode to 0
 echo 0 > /sys/module/am_vecm/parameters/hdr_mode
+
+# disable noise
+echo 0 > /sys/module/di/parameters/nr2_en
