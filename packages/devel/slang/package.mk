@@ -17,30 +17,52 @@
 ################################################################################
 
 PKG_NAME="slang"
-PKG_VERSION="2.1.4"
+PKG_VERSION="2.3.1"
+PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
-PKG_SITE="http://s-lang.org/"
-PKG_URL="ftp://space.mit.edu/pub/davis/slang/v2.1/$PKG_NAME-$PKG_VERSION.tar.gz"
-PKG_DEPENDS_TARGET="toolchain"
+PKG_SITE="http://www.jedsoft.org/slang"
+PKG_URL="http://www.jedsoft.org/releases/slang/old/$PKG_NAME-$PKG_VERSION.tar.bz2"
+PKG_DEPENDS_TARGET=""
+PKG_BUILD_DEPENDS_TARGET="toolchain"
+PKG_PRIORITY="optional"
 PKG_SECTION="devel"
-PKG_SHORTDESC="slang: multi-platform programmer's library designed to allow a developer to create robust multi-platform software."
-PKG_LONGDESC="S-Lang is a multi-platform programmer's library designed to allow a developer to create robust multi-platform software. It provides facilities required by interactive applications such as display/screen management, keyboard input, keymaps, and so on. The most exciting feature of the library is the slang interpreter that may be easily embedded into a program to make it extensible. While the emphasis has always been on the embedded nature of the interpreter, it may also be used in a stand-alone fashion through the use of slsh, which is part of the S-Lang distribution."
-
+PKG_SHORTDESC="slang: library for the S-Lang extension language"
+PKG_LONGDESC="S-Lang is an interpreted language and a programming library.  The S-Lang language was designed so that it can be easily embedded into a program to provide the program with a powerful extension language.  The S-Lang library, provided in this package, provides the S-Lang extension language.  S-Lang's syntax resembles C, which makes it easy to recode S-Lang procedures in C if you need to."
 PKG_IS_ADDON="no"
 PKG_AUTORECONF="no"
 
-MAKEFLAGS=-j1
-
-
-pre_configure_target() {
- # slang fails to build in subdirs
- cd $PKG_BUILD
- rm -rf .$TARGET_NAME
+pre_build_target() {
+  mkdir -p $PKG_BUILD/.$TARGET_NAME
+  cp -RP $PKG_BUILD/* $PKG_BUILD/.$TARGET_NAME
 }
 
-pre_configure_host() {
- # slang fails to build in subdirs
- cd $PKG_BUILD
- rm -rf .$HOST_NAME
+configure_target() {
+
+./configure --host=$TARGET_NAME \
+        --build=$HOST_NAME \
+        --prefix=/usr \
+        --exec-prefix=/usr \
+        --sysconfdir=/etc \
+        --datadir=/usr/share \
+        --without-iconv \
+        --without-onig \
+        --without-pcre \
+        --without-png \
+        --without-z \
+        --without-x \
+                                                                                                                                                                                        fu_cv_sys_stat_st
+}
+
+make_target() {
+MAKEFLAGS=-j1
+  make
+  $MAKEINSTALL
+  }
+
+makeinstall_target() {
+  $MAKEINSTALL
+mkdir -p $INSTALL/usr/lib
+  cp -P src/"$ARCH"elfobjs/libslan* $INSTALL/usr/lib
+
 }
