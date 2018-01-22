@@ -1,0 +1,18 @@
+show_progress(0, 0);
+set_bootloader_env("upgrade_step", "3");
+
+ui_print("Wiping system");
+format("ext4", "EMMC", "/dev/block/system", "0", "/system");
+
+show_progress(0.700000, 160);
+ui_print("Writing kernel");
+write_raw_image(package_extract_file("KERNEL"), "boot");
+
+ui_print("Writing system");
+mount("ext4", "EMMC", "/dev/block/system", "/system");
+package_extract_dir("system", "/system");
+unmount("/system");
+
+set_bootloader_env("upgrade_step", "1");
+set_progress(1);
+ui_print("LibreELEC Installed Successfully");
