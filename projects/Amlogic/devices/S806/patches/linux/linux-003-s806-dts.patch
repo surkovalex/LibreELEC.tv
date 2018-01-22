@@ -1,0 +1,86 @@
+diff --git a/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd b/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd
+index 9ddcf1f..1dea67b 100755
+--- a/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd
++++ b/arch/arm/boot/dts/amlogic/meson8m2_n200_2G.dtd
+@@ -133,11 +133,11 @@ void root_func(){
+ 		compatible = "amlogic,mesonfb";
+ 		dev_name = "mesonfb";
+ 		status = "okay";
+-		reserve-memory = <0x01800000  0x00100000>;
++		reserve-memory = <0x04800000  0x00100000>;
+ 		reserve-iomap = "true";
+                 vmode = <3>; /**0:VMODE_720P 1:VMODE_LCD  2:VMODE_LVDS_1080P 3:VMODE_1080P*/
+ 		scale_mode = <1>; /*0:default 1:new*/
+-		4k2k_fb = <0>;
++		4k2k_fb = <1>;
+ 		display_size_default = <1920 1080 1920 3240 32>; //1920*1080*4*3 = 0x17BB000
+ 	};
+ 
+@@ -175,8 +175,8 @@ void root_func(){
+                 compatible = "amlogic,vdec";
+                 dev_name = "vdec.0";
+                 status = "okay";
+-								reserve-memory = <0x04000000>; // 64M
+-//		reserve-iomap = "true";
++		reserve-memory = <0x10000000>; // 256M
++		reserve-iomap = "true";
+         };
+ ///	-	picture decoder
+ //$$ MODULE="picture decoder"
+@@ -305,7 +305,7 @@ void root_func(){
+ 		dev_name = "mesonvout";
+ 		status = "okay";
+ 	};
+-
++/*
+ /// ***************************************************************************************
+ ///	-	DISP&MM-A/V Amvideocap
+ //$$ MODULE = "DISP&MM-Amvideocap"
+@@ -316,10 +316,10 @@ void root_func(){
+ 		compatible = "amlogic,amvideocap";
+ 		dev_name = "amvideocap.0";
+ 		status = "okay";
+-		reserve-memory = <0x00800000>;//1920*1088*4
++		reserve-memory = <0x00600000>;//1920*1088*3
+ 		reserve-iomap = "true";
+ 	};
+-
++*/
+ /// ***************************************************************************************
+ ///	-	RTC
+ //$$ MODULE="RTC"
+@@ -490,7 +490,7 @@ sdio{
+             gpio_dat3 = "CARD_4";
+             jtag_pin = "CARD_0";
+             gpio_cd = "CARD_6";
+-            gpio_ro = "GPIOZ_0";
++            //gpio_ro = "GPIOZ_0";
+             irq_in = <3>;
+             irq_out = <5>;
+             card_type = <5>; /* 0:unknown, 1:mmc card(include eMMC), 2:sd card(include tSD), 3:sdio device(ie:sdio-wifi), 4:SD combo (IO+mem) card, 5:NON sdio device(means sd/mmc card), other:reserved */
+@@ -1122,7 +1122,7 @@ sdio{
+     audio_m8_audio{
+         compatible = "amlogic,m8_audio_codec";
+         dev_name = "aml_m8_codec.0";
+-        status = "disable";
++        status = "okay";
+     };
+ 
+ //$$ DEVICE="dummy_codec"
+@@ -1838,12 +1838,12 @@ sdio{
+ //$$ L2 PROP_U32 4 = "amlogic,clrmask"
+ //$$ L2 PROP_STR 8 = "amlogic,pins"
+         audio_pins:audio_pin{
+-            amlogic,setmask=<3 0x78000000      /*bt pcm*/
+-                             10 0x78000000>;  /*external audio codec*/
++		amlogic,setmask=<3 0x78000000>;      /*bt pcm*/
++				//10 0x78000000>;  /*external audio codec*/
+             amlogic,clrmask=<4 0x3c000         /*bt pcm*/
+                              5 0x1000>;        /*bt pcm*/
+-            amlogic,pins = "GPIOX_4","GPIOX_5","GPIOX_6","GPIOX_7",        /*bt pcm*/
+-                           "GPIOAO_8","GPIOAO_9","GPIOAO_10","GPIOAO_11";  /*external audio codec*/
++            amlogic,pins = "GPIOX_4","GPIOX_5","GPIOX_6","GPIOX_7";        /*bt pcm*/
++                           //"GPIOAO_8","GPIOAO_9","GPIOAO_10","GPIOAO_11";  /*external audio codec*/
+         };
+ 
+ //$$ MATCH "Audio_pin_0_match" = "&audio_spdif_pins"
