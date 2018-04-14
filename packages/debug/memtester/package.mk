@@ -1,6 +1,6 @@
 ################################################################################
 #      This file is part of LibreELEC - https://libreelec.tv
-#      Copyright (C) 2016 Team LibreELEC
+#      Copyright (C) 2018-present Team LibreELEC
 #
 #  LibreELEC is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,25 +16,22 @@
 #  along with LibreELEC.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-PKG_NAME="inputstream.adaptive"
-PKG_VERSION="c51b9a9"
+PKG_NAME="memtester"
+PKG_VERSION="4.3.0"
+PKG_ARCH="any"
 PKG_LICENSE="GPL"
-PKG_SITE="http://www.kodi.tv"
-PKG_URL="https://github.com/peak3d/inputstream.adaptive/archive/$PKG_VERSION.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform"
-PKG_SECTION=""
-PKG_SHORTDESC="inputstream.adaptive"
-PKG_LONGDESC="inputstream.adaptive"
+PKG_SITE="http://pyropus.ca/software/memtester/"
+PKG_URL="http://pyropus.ca/software/memtester/old-versions/memtester-${PKG_VERSION}.tar.gz"
+PKG_DEPENDS_TARGET="toolchain"
+PKG_SECTION="debug"
+PKG_SHORTDESC="A userspace utility for testing the memory subsystem for faults"
+PKG_TOOLCHAIN="manual"
 
-PKG_IS_ADDON="yes"
+make_target() {
+  make memtester
+}
 
-addon() {
-  mkdir -p $ADDON_BUILD/$PKG_ADDON_ID/
-  cp -R $PKG_BUILD/.install_pkg/usr/share/$MEDIACENTER/addons/$PKG_NAME/* $ADDON_BUILD/$PKG_ADDON_ID/
-
-  ADDONSO=$(xmlstarlet sel -t -v "/addon/extension/@library_linux" $ADDON_BUILD/$PKG_ADDON_ID/addon.xml)
-  cp -L $PKG_BUILD/.install_pkg/usr/lib/$MEDIACENTER/addons/$PKG_NAME/$ADDONSO $ADDON_BUILD/$PKG_ADDON_ID/
-
-  mkdir -p $ADDON_BUILD/$PKG_ADDON_ID
-  cp -P $PKG_BUILD/.$TARGET_NAME/wvdecrypter/libssd_wv.so $ADDON_BUILD/$PKG_ADDON_ID
+makeinstall_target() {
+  mkdir -p $INSTALL/usr/bin
+  cp memtester $INSTALL/usr/bin
 }
