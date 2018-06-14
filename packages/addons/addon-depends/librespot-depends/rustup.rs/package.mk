@@ -1,6 +1,6 @@
 ################################################################################
 #      This file is part of LibreELEC - https://libreelec.tv
-#      Copyright (C) 2016 Team LibreELEC
+#      Copyright (C) 2018-present Team LibreELEC
 #
 #  LibreELEC is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,22 +16,28 @@
 #  along with LibreELEC.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-PKG_NAME="Adafruit_Python_CharLCD"
-PKG_VERSION="bc75cad"
+PKG_NAME="rustup.rs"
+PKG_VERSION="1.3.0"
 PKG_ARCH="any"
 PKG_LICENSE="MIT"
-PKG_SITE="https://github.com/adafruit/${PKG_NAME}"
-PKG_URL="https://github.com/adafruit/${PKG_NAME}/archive/$PKG_VERSION.tar.gz"
-PKG_DEPENDS_TARGET="toolchain Python distutilscross:host"
-PKG_SECTION="python"
-PKG_SHORTDESC="Adafruit Python CharLCD Library"
-PKG_LONGDESC="Python library for accessing Adafruit character LCDs from a Raspberry Pi or BeagleBone Black."
+PKG_SITE="https://www.rust-lang.org"
+PKG_URL="https://github.com/rust-lang-nursery/rustup.rs/archive/$PKG_VERSION.tar.gz"
+PKG_DEPENDS_TARGET="toolchain"
+PKG_SECTION="devel"
+PKG_LONGDESC="The Rust toolchain installer."
+PKG_IS_ADDON="no"
+
 PKG_AUTORECONF="no"
 
+
+configure_target() {
+  :
+}
+
 make_target() {
-  : # nop
+  :
 }
 
 makeinstall_target() {
-  : # nop
+  :
 }
