@@ -261,6 +261,8 @@ if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "amlimg" 
     INSTALL_SRC_DIR="$PROJECT_DIR/$PROJECT/install"
   fi
 
+  MKIMAGE_TOOL_CMD="$(which mkimage) -A arm -O linux -T script -C none -d"
+
   # cleanup
   rm -rf $RELEASE_DIR
 
@@ -351,12 +353,15 @@ if [ "$1" = "release" -o "$1" = "mkimage" -o "$1" = "amlpkg" -o "$1" = "amlimg" 
       DISTRO="$DISTRO" \
       TARGET_IMG="$TARGET_IMG" \
       IMAGE_NAME="$IMAGE_NAME" \
+      INSTALL_SRC_DIR="$INSTALL_SRC_DIR" \
       BOOTLOADER="$BOOTLOADER" \
       KERNEL_NAME="$KERNEL_NAME" \
+      MKIMAGE_TOOL_CMD="$MKIMAGE_TOOL_CMD" \
       RELEASE_DIR=$RELEASE_DIR \
       UUID_SYSTEM="$(uuidgen)" \
       UUID_STORAGE="$(uuidgen)" \
       UBOOT_SYSTEM="$UBOOT_SYSTEM" \
+      UBOOT_VERSION="$UBOOT_VERSION" \
       EXTRA_CMDLINE="$EXTRA_CMDLINE" \
       SYSTEM_SIZE="$SYSTEM_SIZE" \
       SYSTEM_PART_START="$SYSTEM_PART_START" \
