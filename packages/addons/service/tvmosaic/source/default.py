@@ -16,34 +16,24 @@
 #  along with LibreELEC.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-PKG_NAME="snapserver"
-PKG_VERSION="0.15.0"
-PKG_REV="102"
-PKG_ARCH="any"
-PKG_LICENSE="GPLv3"
-PKG_DEPENDS_TARGET="toolchain shairport-sync snapcast"
-PKG_SECTION="service"
-PKG_SHORTDESC="Snapserver: Synchronous multi-room audio server"
-PKG_LONGDESC="Snapclient ($PKG_VERSION) is a Snapcast server. Snapcast is a multi-room client-server audio system, where all clients are time synchronized with the server to play perfectly synced audioplays."
-PKG_AUTORECONF="no"
+import subprocess
+import xbmc
+import xbmcaddon
 
-PKG_IS_ADDON="yes"
-PKG_ADDON_NAME="Snapserver"
-PKG_ADDON_TYPE="xbmc.service"
-PKG_ADDON_REQUIRES="service.librespot:0.0.0"
-PKG_MAINTAINER="Anton Voyl (awiouy)"
 
-make_target() {
-  :
-}
+def systemctl(command):
+    subprocess.call(
+        ['systemctl', command, xbmcaddon.Addon().getAddonInfo('id')])
 
-makeinstall_target() {
-  :
-}
 
-addon() {
-  mkdir -p "$ADDON_BUILD/$PKG_ADDON_ID/bin"
-  cp "$(get_build_dir shairport-sync)/.$TARGET_NAME/shairport-sync" \
-     "$(get_build_dir snapcast)/server/snapserver" \
-     "$ADDON_BUILD/$PKG_ADDON_ID/bin"
-}
+class Monitor(xbmc.Monitor):
+
+    def __init__(self, *args, **kwargs):
+        xbmc.Monitor.__init__(self)
+
+    def onSettingsChanged(self):
+        systemctl('restart')
+
+
+if __name__ == '__main__':
+    Monitor().waitForAbort()
